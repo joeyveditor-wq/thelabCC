@@ -71,7 +71,7 @@ function CanvasInner({
   const [generating, setGenerating] = useState(false);
   const [openOutput, setOpenOutput] = useState<GenerationResult | null>(null);
   const [adding, setAdding] = useState<SourceKind | null>(null);
-  const [saved, setSaved] = useState<"idle" | "saving" | "saved">("saved");
+  const [saved, setSaved] = useState<"saved" | "saving" | "unsaved" | "error">("saved");
 
   /* stable handlers keyed by node id */
   const toggleSelect = useCallback((id: string) => {
@@ -149,42 +149,80 @@ function CanvasInner({
     [setEdges]
   );
 
-  /* ---- autosave (debounced) ---- */
+  /* ---- autosave ----
+     The latest graph lives in a ref so we can save imperatively (on change,
+     on demand, and on page-exit) without stale closures. */
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const dirty = useRef(false);
+  const mounted = useRef(false);
+  const graphRef = useRef({ nodes, edges });
 
-  const persist = useCallback(() => {
-    const payloadNodes: BoardNode[] = nodes.map((n) => ({
-      ...n.data.node,
-      position: n.position,
-      boardId: board.id,
-    }));
-    const payloadEdges: BoardEdge[] = edges.map((e) => ({
-      id: e.id,
-      boardId: board.id,
-      source: e.source,
-      target: e.target,
-    }));
+  const buildPayload = useCallback(() => {
+    const { nodes, edges } = graphRef.current;
+    return JSON.stringify({
+      nodes: nodes.map((n) => ({
+        ...n.data.node,
+        position: n.position,
+        boardId: board.id,
+      })),
+      edges: edges.map((e) => ({
+        id: e.id,
+        boardId: board.id,
+        source: e.source,
+        target: e.target,
+      })),
+    });
+  }, [board.id]);
+
+  const saveNow = useCallback(() => {
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+    }
     setSaved("saving");
-    api(`/api/boards/${board.id}/graph`, {
+    return api(`/api/boards/${board.id}/graph`, {
       method: "PUT",
-      body: JSON.stringify({ nodes: payloadNodes, edges: payloadEdges }),
+      body: buildPayload(),
     })
       .then(() => setSaved("saved"))
-      .catch(() => setSaved("idle"));
-  }, [nodes, edges, board.id]);
+      .catch(() => setSaved("error"));
+  }, [board.id, buildPayload]);
 
+  /* keep the ref current + debounce-save on every graph change */
   useEffect(() => {
-    if (!dirty.current) {
-      dirty.current = true;
+    graphRef.current = { nodes, edges };
+    if (!mounted.current) {
+      mounted.current = true;
       return;
     }
+    setSaved("unsaved");
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(persist, 900);
+    saveTimer.current = setTimeout(saveNow, 700);
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, [nodes, edges, persist]);
+  }, [nodes, edges, saveNow]);
+
+  /* flush pending changes when the tab is hidden, closed, or navigated away
+     — keepalive lets the request complete even as the page unloads */
+  useEffect(() => {
+    const flush = () => {
+      fetch(`/api/boards/${board.id}/graph`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: buildPayload(),
+        keepalive: true,
+      }).catch(() => {});
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", flush);
+    };
+  }, [board.id, buildPayload]);
 
   /* ---- add nodes ---- */
   const spawnPosition = () =>
@@ -322,10 +360,29 @@ function CanvasInner({
       </div>
 
       {/* save status */}
-      <div className="pointer-events-none absolute left-5 top-5 z-20">
-        <span className="label rounded-full border border-[var(--line-strong)] bg-[var(--bg-raised)]/80 px-3 py-1.5 text-[var(--text-muted)] backdrop-blur">
-          {saved === "saving" ? "◌ Saving…" : saved === "saved" ? "✓ Saved" : "• Local"}
-        </span>
+      <div className="absolute left-5 top-5 z-20">
+        <button
+          onClick={() => saveNow()}
+          title="Click to save now"
+          className="label rounded-full border bg-[var(--bg-raised)]/80 px-3 py-1.5 backdrop-blur transition-colors"
+          style={{
+            borderColor: saved === "error" ? "#FF7AA2" : "var(--line-strong)",
+            color:
+              saved === "error"
+                ? "#FF7AA2"
+                : saved === "saved"
+                  ? "var(--text-muted)"
+                  : "var(--text)",
+          }}
+        >
+          {saved === "saving"
+            ? "◌ Saving…"
+            : saved === "saved"
+              ? "✓ Saved"
+              : saved === "error"
+                ? "⚠ Not saved — click to retry"
+                : "• Unsaved…"}
+        </button>
       </div>
 
       {/* generate FAB */}
