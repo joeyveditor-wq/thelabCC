@@ -1,0 +1,136 @@
+export type NodeKind =
+  | "pdf"
+  | "document"
+  | "website"
+  | "youtube"
+  | "image"
+  | "note"
+  | "output";
+
+export interface CanvasPosition {
+  x: number;
+  y: number;
+}
+
+/** A node living on a board's canvas. */
+export interface BoardNode {
+  id: string;
+  boardId: string;
+  kind: NodeKind;
+  position: CanvasPosition;
+  /** display title shown on the node header */
+  title: string;
+  /** for source nodes, points at a BrainSource; output nodes embed their result */
+  sourceId?: string;
+  /** free text for notes, or short preview text for sources */
+  text?: string;
+  /** url for website / youtube / image nodes */
+  url?: string;
+  /** embedded generation result for output nodes */
+  output?: GenerationResult;
+  width?: number;
+}
+
+export interface BoardEdge {
+  id: string;
+  boardId: string;
+  source: string;
+  target: string;
+}
+
+export interface Board {
+  id: string;
+  name: string;
+  clientId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** A reusable piece of ingested context — the "content brain". */
+export interface BrainSource {
+  id: string;
+  kind: Exclude<NodeKind, "note" | "output">;
+  title: string;
+  url?: string;
+  /** extracted, searchable text */
+  content: string;
+  /** short auto summary */
+  summary?: string;
+  tokens?: number;
+  clientId?: string;
+  createdAt: string;
+}
+
+export interface ClientProfile {
+  id: string;
+  name: string;
+  niche: string;
+  voice: string;
+  audience: string;
+  notes?: string;
+  /** extracted text from an uploaded brand/voice PDF — fed to the AI as context */
+  referenceDoc?: string;
+  createdAt: string;
+}
+
+export interface TalentProfile {
+  id: string;
+  clientId?: string;
+  name: string;
+  persona: string;
+  delivery: string;
+  doNots?: string;
+  createdAt: string;
+}
+
+/** The framework/doctrine the AI must pattern-match every output against. */
+export interface Doctrine {
+  id: string;
+  clientId?: string;
+  name: string;
+  framework: string;
+  createdAt: string;
+}
+
+export interface IdeaVariant {
+  label: string;
+  twist: string;
+}
+
+export interface ContentIdea {
+  format: string;
+  concept: string;
+  hooks: string[];
+  prompts: string[];
+  whyItWorks: string;
+  citations: string[];
+  variants: IdeaVariant[];
+}
+
+export interface GenerationResult {
+  id: string;
+  goal: string;
+  ideas: ContentIdea[];
+  sourceIds: string[];
+  sourceTitles: string[];
+  clientId?: string;
+  talentId?: string;
+  doctrineId?: string;
+  model: string;
+  grounded: boolean;
+  createdAt: string;
+}
+
+export interface HistoryEntry extends GenerationResult {
+  boardId: string;
+}
+
+export interface GenerateRequest {
+  boardId?: string;
+  goal: string;
+  sourceIds: string[];
+  clientId?: string;
+  talentId?: string;
+  doctrineId?: string;
+  count?: number;
+}

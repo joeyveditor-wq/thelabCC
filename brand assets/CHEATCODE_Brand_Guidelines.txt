@@ -1,0 +1,153 @@
+==================================================================
+                    CHEATCODE
+            BRAND IDENTITY & VISUAL GUIDELINES
+==================================================================
+
+
+------------------------------------------------------------------
+1. BRAND OVERVIEW
+------------------------------------------------------------------
+
+Brand Name:     CHEATCODE
+Category:       Creative / Media Agency
+Services:       Marketing • Content Strategy • Production • Hosting
+
+Brand Personality:
+  - Bold, high-energy, and confident
+  - Gaming / arcade-inspired with a retro-futuristic edge
+  - Premium yet rebellious
+  - Built to grab attention instantly
+
+Brand Voice:
+  - Punchy, direct, and self-assured
+  - Short, impactful statements over long copy
+  - Speaks to creators, brands, and culture-driven audiences
+
+
+------------------------------------------------------------------
+2. LOGO
+------------------------------------------------------------------
+
+Primary Logotype:
+  - Wordmark "CHEATCODE" set in a custom heavy display typeface
+  - Letters are condensed, italicized, and arched in a dynamic curve
+  - Terminates in a lightning-bolt / arrow flourish at both ends,
+    forming a banner-like sweep beneath the word
+
+Logo Finish:
+  - Chrome / metallic gradient with iridescent holographic sheen
+  - Highly reflective, glossy 3D bevel
+  - Reads like polished metal catching neon light
+
+Secondary / Compact Logo (header mark):
+  - Smaller flat white "CHEATCODE" wordmark
+  - Used in navigation and tight spaces where the chrome version
+    is too detailed
+
+Logo Usage Rules:
+  - Always preserve generous clear space around the wordmark
+  - Never stretch, skew, or recolor the chrome version
+  - Use the flat white mark on busy or small applications
+  - Maintain the upward arch and bolt flourish — do not flatten
+
+
+------------------------------------------------------------------
+3. COLOR PALETTE
+------------------------------------------------------------------
+
+PRIMARY BACKGROUND
+  Near-Black          #0A0A0A
+  Pure Black          #000000
+  (Background features a subtle dark grid pattern)
+
+LOGO / ACCENT GRADIENT (Iridescent Chrome)
+  Electric Blue       #2B2BFF
+  Deep Indigo         #4B2EC9
+  Violet / Purple     #8A2BE2
+  Hot Magenta / Pink  #FF4FD8
+  Coral Pink          #FF7AA2
+  Warm Gold / Amber   #FFC04D
+  Bright Yellow       #FFE96B
+  Highlight White     #FFFFFF
+
+UI / TEXT
+  Primary White       #FFFFFF
+  Muted Grey          #6E6E6E   (used for service line text)
+  Grid Lines          #1C1C1C   (faint, low-contrast on black)
+
+Color Usage:
+  - Black dominates — keep backgrounds dark and clean
+  - The chrome gradient (blue > purple > pink > gold) is reserved
+    for hero/logo moments and key highlights
+  - Avoid using the full gradient on small UI elements
+  - Use white and muted grey for body and supporting text
+
+
+------------------------------------------------------------------
+4. TYPOGRAPHY
+------------------------------------------------------------------
+
+DISPLAY / LOGO TYPE
+  Style:      Custom heavy, condensed, italic display face
+  Feel:       Sports/gaming jersey lettering, aggressive arch
+  Suggested:  Custom lettering (primary). Close alternatives:
+              - Druk Wide / Druk Condensed
+              - Monument Extended
+              - Anton (free, condensed bold)
+  Treatment:  All caps, italic, tight tracking, arched baseline
+
+NAVIGATION / BUTTON TYPE
+  Style:      Bold, compact sans-serif, all caps
+  Suggested:  Helvetica Now / Neue Haas Grotesk Bold
+              - Inter Bold or Archivo (free alternatives)
+  Tracking:   Slightly increased letter spacing
+
+SERVICE LINE / LABELS
+  Style:      Medium-weight sans-serif, all caps, muted grey
+  Format:     Items separated by bullet dots ( • )
+  Example:    MARKETING • CONTENT STRATEGY • PRODUCTION • HOSTING
+
+BODY TEXT (extended use)
+  Style:      Clean neutral sans-serif
+  Suggested:  Inter / Helvetica / Archivo
+  Color:      White on black, grey for secondary
+
+
+------------------------------------------------------------------
+5. LAYOUT & VISUAL SYSTEM
+------------------------------------------------------------------
+
+Background:
+  - Solid black canvas
+  - Faint thin-line grid overlay for subtle structure/depth
+
+Composition:
+  - Hero logo is oversized and dominant, centered
+  - Lots of negative space — let the mark breathe
+  - Navigation kept minimal: logo top-left, single CTA top-right
+
+Buttons / CTAs:
+  - Pill-shaped outline button (e.g. "WORK WITH US")
+  - Thin white stroke, transparent fill, white uppercase text
+  - Hover state can introduce the gradient or fill
+
+Imagery Style:
+  - High-contrast, glossy, chrome and neon finishes
+  - Retro-futuristic, Y2K / arcade-inspired textures
+  - Reflective, iridescent surfaces
+
+
+------------------------------------------------------------------
+6. DESIGN PRINCIPLES
+------------------------------------------------------------------
+
+  1. DARK FIRST     — Black is the foundation; let it dominate.
+  2. ONE HERO       — A single bold element commands each screen.
+  3. CHROME ACCENT  — Use the iridescent gradient sparingly for impact.
+  4. CLEAN STRUCTURE— Minimal nav, generous spacing, subtle grid.
+  5. ALL CAPS ENERGY— Type is bold, condensed, and confident.
+
+
+==================================================================
+              END OF BRAND GUIDELINES — CHEATCODE
+==================================================================
