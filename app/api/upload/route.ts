@@ -28,7 +28,7 @@ export async function POST(req: Request) {
   const file = form.get("file");
   const kind = String(form.get("kind") || "") as UploadKind;
   const titleField = (form.get("title") as string) || "";
-  const clientId = (form.get("clientId") as string) || undefined;
+  const boardId = (form.get("boardId") as string) || undefined;
 
   if (!(file instanceof File)) return bad("file is required");
   if (!["pdf", "document", "image"].includes(kind))
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
     content: output.content,
     summary: output.summary,
     tokens: output.tokens,
-    clientId,
+    boardId,
     createdAt: new Date().toISOString(),
   };
   await store.sources.insert(source);

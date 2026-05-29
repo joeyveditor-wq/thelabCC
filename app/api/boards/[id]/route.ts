@@ -12,17 +12,28 @@ export async function GET(_req: Request, { params }: Ctx) {
     store.nodes.all({ boardId: id }),
     store.edges.all({ boardId: id }),
   ]);
-  const client = board.clientId ? await store.clients.get(board.clientId) : null;
-  return ok({ board, nodes, edges, client });
+  return ok({ board, nodes, edges });
 }
 
 export async function PATCH(req: Request, { params }: Ctx) {
   const { id } = await params;
-  const body = await readJson<{ name?: string; clientId?: string }>(req);
+  const body = await readJson<Record<string, string | undefined>>(req);
+  if (!body) return bad("invalid body");
   const store = await getStore();
+  const allowed = [
+    "name",
+    "tagline",
+    "voice",
+    "audience",
+    "doctrineName",
+    "framework",
+    "referenceDoc",
+    "notes",
+  ] as const;
   const patch: Record<string, string> = { updatedAt: new Date().toISOString() };
-  if (body?.name) patch.name = body.name.trim();
-  if (body?.clientId !== undefined) patch.clientId = body.clientId;
+  for (const k of allowed) {
+    if (typeof body[k] === "string") patch[k] = body[k]!.trim();
+  }
   const updated = await store.boards.update(id, patch);
   if (!updated) return bad("board not found", 404);
   return ok(updated);

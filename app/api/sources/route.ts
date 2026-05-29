@@ -6,14 +6,14 @@ import type { BrainSource } from "@/lib/types";
 
 export async function GET(req: Request) {
   const store = await getStore();
-  const clientId = new URL(req.url).searchParams.get("clientId") ?? undefined;
-  const sources = await store.sources.all(clientId ? { clientId } : undefined);
+  const boardId = new URL(req.url).searchParams.get("boardId") ?? undefined;
+  const sources = await store.sources.all(boardId ? { boardId } : undefined);
   sources.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return ok(sources);
 }
 
 export async function POST(req: Request) {
-  const body = await readJson<IngestInput & { clientId?: string }>(req);
+  const body = await readJson<IngestInput & { boardId?: string }>(req);
   if (!body?.kind) return bad("kind is required");
 
   const ingested = await ingestSource(body);
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     content: ingested.content,
     summary: ingested.summary,
     tokens: ingested.tokens,
-    clientId: body.clientId,
+    boardId: body.boardId,
     createdAt: new Date().toISOString(),
   };
   await store.sources.insert(source);

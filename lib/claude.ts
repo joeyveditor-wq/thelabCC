@@ -1,19 +1,10 @@
 import { nanoid } from "nanoid";
-import type {
-  BrainSource,
-  ClientProfile,
-  ContentIdea,
-  Doctrine,
-  GenerationResult,
-  TalentProfile,
-} from "./types";
+import type { Board, BrainSource, ContentIdea, GenerationResult } from "./types";
 
 interface GenInput {
   goal: string;
   sources: BrainSource[];
-  client?: ClientProfile | null;
-  talent?: TalentProfile | null;
-  doctrine?: Doctrine | null;
+  board?: Board | null;
   count: number;
 }
 
@@ -29,9 +20,7 @@ export async function generateIdeas(input: GenInput): Promise<GenerationResult> 
     ideas,
     sourceIds: input.sources.map((s) => s.id),
     sourceTitles: input.sources.map((s) => s.title),
-    clientId: input.client?.id,
-    talentId: input.talent?.id,
-    doctrineId: input.doctrine?.id,
+    boardName: input.board?.name,
     model: live ? MODEL : "local-stub",
     grounded: input.sources.length > 0,
     createdAt: new Date().toISOString(),
@@ -47,18 +36,24 @@ function buildSystem(input: GenInput): string {
     'Ground every idea ONLY in the provided sources. In each idea\'s "citations" array, list the exact source TITLE string(s) it draws from — copy the title verbatim, with no "Source N:" prefix. Never invent facts not present in the sources.',
     "Output must be lean and scannable.",
   ];
-  if (input.client)
-    parts.push(
-      `CLIENT: ${input.client.name}. Niche: ${input.client.niche}. Voice: ${input.client.voice}. Audience: ${input.client.audience}.${input.client.notes ? " Notes: " + input.client.notes : ""}${input.client.referenceDoc ? "\nCLIENT BRAND/VOICE REFERENCE (match this closely):\n" + input.client.referenceDoc.slice(0, 4000) : ""}`
-    );
-  if (input.talent)
-    parts.push(
-      `TALENT: ${input.talent.name}. Persona: ${input.talent.persona}. Delivery: ${input.talent.delivery}.${input.talent.doNots ? " Do NOT: " + input.talent.doNots : ""}`
-    );
-  if (input.doctrine)
-    parts.push(
-      `DOCTRINE (every idea must pattern-match this framework): ${input.doctrine.name} — ${input.doctrine.framework}`
-    );
+  const b = input.board;
+  if (b) {
+    const brand: string[] = [`CLIENT: ${b.name}.`];
+    if (b.tagline) brand.push(`Niche: ${b.tagline}.`);
+    if (b.voice) brand.push(`Voice: ${b.voice}.`);
+    if (b.audience) brand.push(`Audience: ${b.audience}.`);
+    if (b.notes) brand.push(`Notes: ${b.notes}.`);
+    if (b.framework)
+      brand.push(
+        `DOCTRINE${b.doctrineName ? " (" + b.doctrineName + ")" : ""} — every idea must pattern-match this framework: ${b.framework}`
+      );
+    if (b.referenceDoc)
+      brand.push(
+        "BRAND / VOICE REFERENCE (match this closely):\n" +
+          b.referenceDoc.slice(0, 4000)
+      );
+    parts.push(brand.join(" "));
+  }
   parts.push(
     'Return ONLY valid JSON: {"ideas":[{"format":string,"concept":string,"hooks":string[3-5],"prompts":string[2-4],"whyItWorks":string,"citations":string[],"variants":[{"label":string,"twist":string}]}]}'
   );
@@ -146,7 +141,7 @@ function topicFrom(source: BrainSource | undefined, goal: string): string {
 }
 
 function generateStub(input: GenInput): ContentIdea[] {
-  const { sources, count, doctrine, client } = input;
+  const { sources, count, board } = input;
   const ideas: ContentIdea[] = [];
   const n = Math.max(1, Math.min(count, 6));
 
@@ -163,8 +158,8 @@ function generateStub(input: GenInput): ContentIdea[] {
       .map((s) => s.title)
       .filter((v, idx, arr) => arr.indexOf(v) === idx);
 
-    const why = doctrine
-      ? `Opens in under 2s with a ${i % 2 === 0 ? "contrarian claim" : "number + stakes"} hook — matches "${doctrine.name}". One idea, shown not told.${client ? " Voice stays " + low(client.voice.split(".")[0]) + "." : ""}`
+    const why = board?.framework
+      ? `Opens in under 2s with a ${i % 2 === 0 ? "contrarian claim" : "number + stakes"} hook — matches "${board.doctrineName || "the doctrine"}". One idea, shown not told.${board.voice ? " Voice stays " + low(board.voice.split(".")[0]) + "." : ""}`
       : `Leads with a curiosity gap and a concrete payoff drawn from the source, so viewers stay past the 3s bounce point.`;
 
     ideas.push({

@@ -38,9 +38,8 @@ export function ThemeToggle() {
 }
 
 const NAV = [
-  { href: "/", label: "Boards" },
+  { href: "/", label: "Clients" },
   { href: "/library", label: "Brain" },
-  { href: "/profiles", label: "Profiles" },
 ];
 
 export function TopBar({ right }: { right?: React.ReactNode }) {

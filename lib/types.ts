@@ -40,7 +40,23 @@ export interface BoardEdge {
 
 export interface Board {
   id: string;
+  /** Client / brand name — every board IS a client workspace */
   name: string;
+  /** One-liner — niche, what they do */
+  tagline?: string;
+  /** How the brand speaks (short, voice-y description) */
+  voice?: string;
+  /** Who they're talking to */
+  audience?: string;
+  /** Name of the doctrine / playbook (e.g. "APEX Viral Hook Doctrine") */
+  doctrineName?: string;
+  /** The framework text the AI must pattern-match to */
+  framework?: string;
+  /** Extracted text from an uploaded brand/voice PDF — fed to the AI */
+  referenceDoc?: string;
+  /** Free-form notes (replaces the old separate Talent concept) */
+  notes?: string;
+  /** legacy — kept for back-compat with any existing rows */
   clientId?: string;
   createdAt: string;
   updatedAt: string;
@@ -57,7 +73,8 @@ export interface BrainSource {
   /** short auto summary */
   summary?: string;
   tokens?: number;
-  clientId?: string;
+  /** which board (client workspace) owns this source */
+  boardId?: string;
   createdAt: string;
 }
 
@@ -113,9 +130,8 @@ export interface GenerationResult {
   ideas: ContentIdea[];
   sourceIds: string[];
   sourceTitles: string[];
-  clientId?: string;
-  talentId?: string;
-  doctrineId?: string;
+  /** Name of the board/client this was generated for */
+  boardName?: string;
   model: string;
   grounded: boolean;
   createdAt: string;
@@ -129,8 +145,5 @@ export interface GenerateRequest {
   boardId?: string;
   goal: string;
   sourceIds: string[];
-  clientId?: string;
-  talentId?: string;
-  doctrineId?: string;
   count?: number;
 }

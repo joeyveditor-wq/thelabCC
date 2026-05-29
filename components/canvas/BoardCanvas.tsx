@@ -21,12 +21,10 @@ import type {
   Board,
   BoardEdge,
   BoardNode,
-  ClientProfile,
-  Doctrine,
   GenerateRequest,
   GenerationResult,
+  HistoryEntry,
   NodeKind,
-  TalentProfile,
 } from "@/lib/types";
 import { api, createSource } from "@/lib/client";
 import { nodeTypes, type NodeData } from "./nodeTypes";
@@ -42,10 +40,7 @@ interface InitialData {
   board: Board;
   nodes: BoardNode[];
   edges: BoardEdge[];
-  client: ClientProfile | null;
-  clients: ClientProfile[];
-  talent: TalentProfile[];
-  doctrines: Doctrine[];
+  history: HistoryEntry[];
 }
 
 export function BoardCanvas(props: InitialData) {
@@ -57,14 +52,13 @@ export function BoardCanvas(props: InitialData) {
 }
 
 function CanvasInner({
-  board,
+  board: initialBoard,
   nodes: initialNodes,
   edges: initialEdges,
-  client,
-  clients,
-  talent,
-  doctrines,
+  history: initialHistory,
 }: InitialData) {
+  const [board, setBoard] = useState<Board>(initialBoard);
+  const [history, setHistory] = useState<HistoryEntry[]>(initialHistory);
   const { screenToFlowPosition } = useReactFlow();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [panelOpen, setPanelOpen] = useState(true);
@@ -245,7 +239,7 @@ function CanvasInner({
   };
 
   const handleAddSource = async (payload: AddPayload) => {
-    const src = await createSource({ ...payload, clientId: board.clientId });
+    const src = await createSource({ ...payload, boardId: board.id });
     const id = nanoid();
     const node: BoardNode = {
       id,
@@ -306,6 +300,7 @@ function CanvasInner({
         })),
       ]);
       setOpenOutput(result);
+      setHistory((h) => [{ ...result, boardId: board.id }, ...h]);
     } catch (e) {
       alert("Generation failed: " + (e as Error).message);
     } finally {
@@ -314,7 +309,23 @@ function CanvasInner({
   };
 
   return (
-    <div className="relative h-[calc(100vh-4rem)] w-full surface-grid">
+    <div className="flex h-[calc(100vh-4rem)] w-full flex-col">
+      <header className="flex items-center gap-3 border-b border-[var(--line)] bg-[var(--bg)]/80 px-6 py-3 backdrop-blur">
+        <h1 className="display text-lg text-[var(--text)]">{board.name}</h1>
+        {board.tagline && (
+          <span className="hidden text-[12px] text-[var(--text-muted)] sm:inline">
+            · {board.tagline}
+          </span>
+        )}
+        <button
+          onClick={() => setPanelOpen(true)}
+          className="label ml-auto rounded-full border border-[var(--line-strong)] px-3 py-1 text-[var(--text-muted)] transition-colors hover:border-cc-magenta hover:text-[var(--text)]"
+          title="Edit brand context"
+        >
+          ✎ Brand
+        </button>
+      </header>
+      <div className="relative flex-1 w-full surface-grid">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -394,16 +405,23 @@ function CanvasInner({
           ✦ Generate
         </button>
       )}
+      </div>{/* /canvas wrapper */}
 
       <GenerationPanel
         open={panelOpen}
         onClose={() => setPanelOpen(false)}
+        board={board}
+        onBoardChange={(patch) => {
+          setBoard((b) => ({ ...b, ...patch }));
+          api(`/api/boards/${board.id}`, {
+            method: "PATCH",
+            body: JSON.stringify(patch),
+          }).catch(() => {});
+        }}
         fedSources={fedSources}
         allSourceCount={sourceNodes.length}
-        clients={clients}
-        talent={talent}
-        doctrines={doctrines}
-        defaultClientId={client?.id}
+        history={history}
+        onOpenHistory={(r) => setOpenOutput(r)}
         generating={generating}
         onGenerate={runGeneration}
       />

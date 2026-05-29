@@ -6,10 +6,7 @@ export const dynamic = "force-dynamic";
 
 export default async function LibraryPage() {
   const store = await getStore();
-  const [sources, clients] = await Promise.all([
-    store.sources.all(),
-    store.clients.all(),
-  ]);
+  const sources = await store.sources.all();
   sources.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   return (
@@ -22,13 +19,13 @@ export default async function LibraryPage() {
             The <span className="text-chrome">brain</span>
           </h1>
           <p className="mt-3 max-w-xl text-[var(--text-dim)]">
-            Every source you ingest becomes reusable, citable context — across every
-            board and client.
+            Every source you ingest on any client's board lives here too —
+            reusable, citable context.
           </p>
         </div>
       </section>
       <section className="mx-auto max-w-6xl px-6 py-10">
-        <LibraryManager initialSources={sources} clients={clients} />
+        <LibraryManager initialSources={sources} />
       </section>
     </main>
   );

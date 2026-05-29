@@ -12,18 +12,12 @@ export async function POST(req: Request) {
     await Promise.all((body.sourceIds ?? []).map((id) => store.sources.get(id)))
   ).filter((s): s is NonNullable<typeof s> => !!s);
 
-  const [client, talent, doctrine] = await Promise.all([
-    body.clientId ? store.clients.get(body.clientId) : null,
-    body.talentId ? store.talent.get(body.talentId) : null,
-    body.doctrineId ? store.doctrines.get(body.doctrineId) : null,
-  ]);
+  const board = body.boardId ? await store.boards.get(body.boardId) : null;
 
   const result = await generateIdeas({
     goal: body.goal.trim(),
     sources,
-    client,
-    talent,
-    doctrine,
+    board,
     count: body.count ?? 4,
   });
 

@@ -217,7 +217,7 @@ function makeSeed() {
         "Every short-form opener must land in <2s. Use one of: (1) Contrarian claim, (2) Specific number + stakes, (3) Visible transformation tease, (4) Callout to a named enemy/myth. Never open with a greeting. The first frame must show motion or a result. Reward curiosity within 3s or viewers bounce.",
       summary: "Internal proven-hook doctrine: sub-2s openers, 4 hook archetypes, no greetings.",
       tokens: 86,
-      clientId: "cl_demo",
+      boardId: "bd_demo",
       createdAt: iso(18),
     },
     {
@@ -229,7 +229,7 @@ function makeSeed() {
         "Transcript: Most athletes confuse activity with progress. They show up, they sweat, they leave — but they never track the one metric that matters: rate of force development. In this video we break down how a 0.2 second improvement off the line separates pros from amateurs. The drill nobody films but everyone should...",
       summary: "Viral video arguing athletes track the wrong metrics; RFD is the real differentiator.",
       tokens: 71,
-      clientId: "cl_demo",
+      boardId: "bd_demo",
       createdAt: iso(12),
     },
     {
@@ -241,7 +241,7 @@ function makeSeed() {
         "Findings: elite sprinters spend less ground-contact time (sub-0.09s) and apply force more vertically. Training horizontal force output yields the largest acceleration gains for sub-elite athletes. Plyometric progression over 8 weeks improved 10m splits by an average of 4.1%.",
       summary: "Study: ground-contact time and horizontal force drive acceleration; 8-wk plyo = +4.1%.",
       tokens: 64,
-      clientId: "cl_demo",
+      boardId: "bd_demo",
       createdAt: iso(9),
     },
     {
@@ -252,7 +252,7 @@ function makeSeed() {
         "APEX speaks like a coach who believes in you but won't coddle you. Tone: 80% encouragement, 20% challenge. Banned words: 'synergy', 'leverage', 'unlock your potential'. Signature phrases: 'Earn it.', 'Reps don't lie.', 'Comfort is the enemy.'",
       summary: "Brand voice: coach energy, 80/20 encourage/challenge, banned corporate words.",
       tokens: 58,
-      clientId: "cl_demo",
+      boardId: "bd_demo",
       createdAt: iso(7),
     },
   ];
@@ -283,8 +283,17 @@ function makeSeed() {
   const boards: Board[] = [
     {
       id: "bd_demo",
-      name: "APEX — Q3 Short-Form Sprint",
-      clientId: "cl_demo",
+      name: "APEX ATHLETICS",
+      tagline: "Sports performance & training apparel",
+      voice:
+        "High-energy, confident, locker-room direct. Short punchy lines. No corporate filler.",
+      audience:
+        "18-34 competitive athletes, gym-goers, and weekend warriors who chase progress.",
+      doctrineName: "APEX Viral Hook Doctrine",
+      framework:
+        "1) Sub-2s hook from 4 archetypes (contrarian, number+stakes, transformation tease, named-enemy). 2) One idea per video. 3) Show, don't tell — open on motion/result. 4) End on an earned challenge, not a CTA. Voice = 80% encourage / 20% challenge.",
+      notes:
+        "Founder is a former D1 sprinter — loves underdog-vs-elite framing. Talent (Coach Reyes): ex-pro sprinter turned trainer, blunt and magnetic. Films in the gym mid-set, never reads a script.",
       createdAt: iso(5),
       updatedAt: iso(1),
     },

@@ -16,43 +16,27 @@ export default async function BoardPage({
   const board = await store.boards.get(id);
   if (!board) notFound();
 
-  const [nodes, edges, clients, talent, doctrines] = await Promise.all([
+  const [nodes, edges, history] = await Promise.all([
     store.nodes.all({ boardId: id }),
     store.edges.all({ boardId: id }),
-    store.clients.all(),
-    store.talent.all(),
-    store.doctrines.all(),
+    store.history.all({ boardId: id }),
   ]);
-  const client = board.clientId ? await store.clients.get(board.clientId) : null;
+  history.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   return (
     <main className="flex h-screen flex-col overflow-hidden">
       <TopBar
         right={
           <Link href="/" className="label text-[var(--text-muted)] hover:text-[var(--text)]">
-            ← All boards
+            ← All clients
           </Link>
         }
       />
-      <div className="flex items-center gap-3 border-b border-[var(--line)] px-6 py-3">
-        <h1 className="display text-lg text-[var(--text)]">{board.name}</h1>
-        {client && (
-          <span className="label rounded-full bg-chrome-soft px-3 py-1 text-[var(--text-dim)]">
-            {client.name}
-          </span>
-        )}
-        <span className="ml-auto label text-[var(--text-muted)]">
-          {nodes.length} nodes
-        </span>
-      </div>
       <BoardCanvas
         board={board}
         nodes={nodes}
         edges={edges}
-        client={client}
-        clients={clients}
-        talent={talent}
-        doctrines={doctrines}
+        history={history}
       />
     </main>
   );

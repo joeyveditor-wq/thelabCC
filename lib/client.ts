@@ -21,7 +21,7 @@ export interface SourcePayload {
   title?: string;
   text?: string;
   file?: File;
-  clientId?: string;
+  boardId?: string;
 }
 
 /** Create a brain source from either an uploaded file or pasted text/URL. */
@@ -31,7 +31,7 @@ export async function createSource(payload: SourcePayload): Promise<BrainSource>
     fd.append("file", payload.file);
     fd.append("kind", payload.kind);
     if (payload.title) fd.append("title", payload.title);
-    if (payload.clientId) fd.append("clientId", payload.clientId);
+    if (payload.boardId) fd.append("boardId", payload.boardId);
     const res = await fetch("/api/upload", { method: "POST", body: fd });
     if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
     return res.json() as Promise<BrainSource>;
