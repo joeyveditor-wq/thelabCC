@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getStore, isMemoryStore } from "@/lib/store";
 import { TopBar } from "@/components/Brand";
 import { NewClient } from "@/components/NewBoard";
+import { BoardCard } from "@/components/BoardCard";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,7 @@ export default async function Dashboard() {
           </p>
           <h1 className="display max-w-3xl text-6xl leading-[0.9] sm:text-7xl">
             <span className="text-[var(--text)]">A workspace per </span>
-            <span className="text-chrome text-chrome-anim inline-block pr-[0.14em] -mr-[0.12em] align-baseline">
+            <span className="text-chrome text-chrome-anim inline-block pr-[0.22em] -mr-[0.18em] align-baseline">
               client
             </span>
             <span className="text-[var(--text)]">. Concepts on tap.</span>
@@ -80,34 +81,13 @@ export default async function Dashboard() {
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {boards.map((b, i) => (
-              <Link
+              <BoardCard
                 key={b.id}
-                href={`/board/${b.id}`}
-                className="group animate-rise-in relative overflow-hidden rounded-3xl border border-[var(--line-strong)] bg-[var(--bg-raised)] p-5 transition-transform duration-200 hover:-translate-y-1 hover:shadow-glow"
-                style={{ animationDelay: `${i * 50}ms` }}
-              >
-                <div className="surface-grid-fine pointer-events-none absolute inset-0 opacity-40" />
-                <div className="relative">
-                  <div className="mb-6 flex items-center justify-between">
-                    <span className="label text-cc-magenta">CLIENT</span>
-                    <span className="label text-[var(--text-muted)]">
-                      {sourceCounts[i]} src · {nodeCounts[i]} nodes
-                    </span>
-                  </div>
-                  <h3 className="display text-2xl leading-tight text-[var(--text)] transition-colors group-hover:text-chrome">
-                    {b.name}
-                  </h3>
-                  {b.tagline && (
-                    <p className="mt-1 line-clamp-2 text-[13px] text-[var(--text-dim)]">
-                      {b.tagline}
-                    </p>
-                  )}
-                  <p className="mt-3 font-mono text-[11px] text-[var(--text-muted)]">
-                    Updated {new Date(b.updatedAt).toLocaleDateString()}
-                  </p>
-                  <div className="chrome-rule mt-5 opacity-0 transition-opacity group-hover:opacity-100" />
-                </div>
-              </Link>
+                board={b}
+                sourceCount={sourceCounts[i]}
+                nodeCount={nodeCounts[i]}
+                index={i}
+              />
             ))}
           </div>
         )}
