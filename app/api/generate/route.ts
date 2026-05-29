@@ -19,6 +19,8 @@ export async function POST(req: Request) {
     sources,
     board,
     count: body.count ?? 4,
+    instructions: body.instructions,
+    sourceContext: body.sourceContext,
   });
 
   if (body.boardId) {

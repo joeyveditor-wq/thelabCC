@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState } from "react";
 import Image from "next/image";
 import type { NodeProps } from "reactflow";
 import type { BoardNode, GenerationResult } from "@/lib/types";
@@ -65,24 +65,102 @@ const SourceNode = memo(({ data }: NodeProps<NodeData>) => {
           {node.url}
         </p>
       )}
+
+      <UseForEditor
+        value={node.useFor}
+        onChange={(v) => data.onChange?.({ useFor: v })}
+      />
     </NodeShell>
   );
 });
 SourceNode.displayName = "SourceNode";
+
+function UseForEditor({
+  value,
+  onChange,
+}: {
+  value?: string;
+  onChange: (v: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value ?? "");
+
+  if (editing) {
+    return (
+      <div className="mt-2 rounded-lg border border-cc-magenta/60 bg-cc-magenta/10 p-1.5">
+        <p className="label mb-1 flex items-center gap-1 text-[10px] text-cc-magenta">
+          <span>⌘</span> USE THIS FOR
+        </p>
+        <textarea
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={() => {
+            setEditing(false);
+            const trimmed = draft.trim();
+            if (trimmed !== (value ?? "")) onChange(trimmed);
+          }}
+          rows={3}
+          placeholder="How should Claude use this source?"
+          className="nodrag w-full resize-none bg-transparent text-[11px] leading-relaxed text-[var(--text)] outline-none placeholder:text-[var(--text-muted)]"
+        />
+      </div>
+    );
+  }
+
+  if (value && value.trim()) {
+    return (
+      <button
+        onClick={() => {
+          setDraft(value);
+          setEditing(true);
+        }}
+        className="mt-2 block w-full rounded-lg border border-cc-magenta/40 bg-cc-magenta/10 p-1.5 text-left transition-colors hover:border-cc-magenta"
+        title="Edit Claude instruction for this source"
+      >
+        <p className="label mb-1 flex items-center gap-1 text-[10px] text-cc-magenta">
+          <span>⌘</span> USE THIS FOR · ✎
+        </p>
+        <p className="line-clamp-3 text-[11px] leading-relaxed text-[var(--text-dim)]">
+          {value}
+        </p>
+      </button>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => {
+        setDraft("");
+        setEditing(true);
+      }}
+      className="mt-2 w-full rounded-lg border border-dashed border-[var(--line-strong)] px-2 py-1.5 text-[10px] text-[var(--text-muted)] transition-colors hover:border-cc-magenta hover:text-[var(--text)]"
+      title="Add a Claude instruction for this source"
+    >
+      + Tell Claude how to use this
+    </button>
+  );
+}
 
 const NoteNode = memo(({ data }: NodeProps<NodeData>) => {
   const { node } = data;
   return (
     <NodeShell
       kind="note"
+      selectable
+      selected={data.selected}
+      onToggle={data.onToggle}
       onDelete={data.onDelete}
       width={232}
     >
+      <p className="label mb-1.5 flex items-center gap-1 text-[10px] text-cc-yellow">
+        <span>⌘</span> INSTRUCTION WHEN FED
+      </p>
       <textarea
         defaultValue={node.text}
-        placeholder="Type a thought…"
+        placeholder="A pinned instruction for Claude. E.g. 'Talent never reads a script.' Hit + FEED above to include it on the next generation."
         onBlur={(e) => data.onChange?.({ text: e.target.value })}
-        className="min-h-[84px] w-full resize-none bg-transparent text-[13px] leading-relaxed text-[var(--text)] outline-none placeholder:text-[var(--text-muted)]"
+        className="nodrag min-h-[84px] w-full resize-none bg-transparent text-[13px] leading-relaxed text-[var(--text)] outline-none placeholder:text-[var(--text-muted)]"
       />
     </NodeShell>
   );

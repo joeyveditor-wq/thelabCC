@@ -6,6 +6,10 @@ interface GenInput {
   sources: BrainSource[];
   board?: Board | null;
   count: number;
+  /** Job-level instructions from fed Note nodes. */
+  instructions?: string[];
+  /** Per-source "use this for" map, keyed by source id. */
+  sourceContext?: Record<string, string>;
 }
 
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-4-7";
@@ -54,6 +58,12 @@ function buildSystem(input: GenInput): string {
       );
     parts.push(brand.join(" "));
   }
+  if (input.instructions && input.instructions.length) {
+    parts.push(
+      "JOB-LEVEL INSTRUCTIONS (the user pinned these as notes for this generation — honor them strictly):\n- " +
+        input.instructions.map((s) => s.trim()).filter(Boolean).join("\n- ")
+    );
+  }
   parts.push(
     'Return ONLY valid JSON: {"ideas":[{"format":string,"concept":string,"hooks":string[3-5],"prompts":string[2-4],"whyItWorks":string,"citations":string[],"variants":[{"label":string,"twist":string}]}]}'
   );
@@ -64,8 +74,14 @@ async function generateLive(input: GenInput): Promise<ContentIdea[]> {
   const Anthropic = (await import("@anthropic-ai/sdk")).default;
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+  const ctx = input.sourceContext ?? {};
   const sourceBlock = input.sources
-    .map((s) => `TITLE: ${s.title}\nTYPE: ${s.kind}\nCONTENT: ${s.content}`)
+    .map((s) => {
+      const useFor = ctx[s.id]?.trim();
+      const head = `TITLE: ${s.title}\nTYPE: ${s.kind}`;
+      const hint = useFor ? `\nUSE THIS FOR (user's instruction for THIS source): ${useFor}` : "";
+      return `${head}${hint}\nCONTENT: ${s.content}`;
+    })
     .join("\n\n---\n\n");
 
   const msg = await client.messages.create({

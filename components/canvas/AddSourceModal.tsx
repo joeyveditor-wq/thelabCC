@@ -10,6 +10,8 @@ export interface AddPayload {
   title?: string;
   text?: string;
   file?: File;
+  /** Optional per-source instruction for Claude (e.g. "aesthetic reference only"). */
+  useFor?: string;
 }
 
 interface KindCopy {
@@ -47,6 +49,7 @@ export function AddSourceModal({
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
+  const [useFor, setUseFor] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -66,6 +69,7 @@ export function AddSourceModal({
         title: title.trim() || undefined,
         text: text.trim() || undefined,
         file: file || undefined,
+        useFor: useFor.trim() || undefined,
       });
     } finally {
       setBusy(false);
@@ -157,6 +161,28 @@ export function AddSourceModal({
             placeholder="Title (optional)"
             className="input"
           />
+
+          <div className="rounded-xl border border-[var(--line)] bg-[var(--bg-elevated)] p-3">
+            <p className="label mb-1.5 flex items-center gap-2 text-[var(--text-muted)]">
+              <span className="text-cc-magenta">⌘</span>
+              Tell Claude how to use this (optional)
+            </p>
+            <textarea
+              value={useFor}
+              onChange={(e) => setUseFor(e.target.value)}
+              rows={2}
+              placeholder={
+                kind === "image"
+                  ? "e.g. aesthetic / mood reference only — match lighting + color, ignore the subject"
+                  : kind === "youtube"
+                    ? "e.g. mine the hooks and pacing; ignore the niche"
+                    : kind === "pdf" || kind === "document"
+                      ? "e.g. cross-reference only, not a strict guideline"
+                      : "e.g. use as one supporting data point"
+              }
+              className="w-full resize-none rounded-lg border border-[var(--line-strong)] bg-[var(--bg-raised)] px-2.5 py-2 text-[12px] leading-relaxed text-[var(--text)] outline-none placeholder:text-[var(--text-muted)] focus:border-cc-magenta"
+            />
+          </div>
         </div>
 
         <div className="flex justify-end gap-2 border-t border-[var(--line)] p-5">

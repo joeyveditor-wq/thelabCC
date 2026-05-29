@@ -27,6 +27,7 @@ export function GenerationPanel({
   onBoardChange,
   fedSources,
   allSourceCount,
+  fedInstructionCount,
   history,
   onOpenHistory,
   generating,
@@ -38,6 +39,7 @@ export function GenerationPanel({
   onBoardChange: (patch: Partial<Board>) => void;
   fedSources: BoardNode[];
   allSourceCount: number;
+  fedInstructionCount: number;
   history: HistoryEntry[];
   onOpenHistory: (r: GenerationResult) => void;
   generating: boolean;
@@ -90,6 +92,7 @@ export function GenerationPanel({
           <ChatTab
             fedSources={fedSources}
             allSourceCount={allSourceCount}
+            fedInstructionCount={fedInstructionCount}
             generating={generating}
             onGenerate={onGenerate}
           />
@@ -108,11 +111,13 @@ export function GenerationPanel({
 function ChatTab({
   fedSources,
   allSourceCount,
+  fedInstructionCount,
   generating,
   onGenerate,
 }: {
   fedSources: BoardNode[];
   allSourceCount: number;
+  fedInstructionCount: number;
   generating: boolean;
   onGenerate: (req: Omit<GenerateRequest, "boardId" | "sourceIds">) => void;
 }) {
@@ -124,15 +129,25 @@ function ChatTab({
   return (
     <div className="flex h-full flex-col">
       <div className="space-y-5 p-5">
-        <Field label="Brain on this board">
-          {usingAll ? (
+        <Field label="What's feeding the AI">
+          {usingAll && fedInstructionCount === 0 ? (
             <p className="rounded-xl border border-dashed border-[var(--line-strong)] px-3 py-2.5 text-[12px] text-[var(--text-muted)]">
               Using all <span className="text-[var(--text)]">{allSourceCount}</span>{" "}
-              sources on the board. Hit{" "}
-              <span className="text-[var(--text)]">+ FEED</span> on nodes to narrow it.
+              sources on the board, no pinned instructions. Hit{" "}
+              <span className="text-[var(--text)]">+ FEED</span> on a node to narrow
+              the sources or pin a Note as an instruction.
             </p>
           ) : (
             <div className="space-y-1.5">
+              {fedInstructionCount > 0 && (
+                <div className="flex items-center gap-2 rounded-lg border border-cc-yellow/40 bg-cc-yellow/10 px-2.5 py-1.5">
+                  <span className="text-cc-yellow">⌘</span>
+                  <span className="truncate text-[12px] text-[var(--text)]">
+                    {fedInstructionCount} instruction
+                    {fedInstructionCount === 1 ? "" : "s"} pinned
+                  </span>
+                </div>
+              )}
               {fedSources.map((s) => (
                 <div
                   key={s.id}
@@ -144,8 +159,21 @@ function ChatTab({
                   <span className="truncate text-[12px] text-[var(--text)]">
                     {s.title}
                   </span>
+                  {s.useFor && (
+                    <span
+                      title={s.useFor}
+                      className="ml-auto text-cc-magenta"
+                    >
+                      ⌘
+                    </span>
+                  )}
                 </div>
               ))}
+              {usingAll && (
+                <p className="text-[11px] text-[var(--text-muted)]">
+                  + all {allSourceCount} sources (no source pins set).
+                </p>
+              )}
             </div>
           )}
         </Field>

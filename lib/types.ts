@@ -26,6 +26,11 @@ export interface BoardNode {
   text?: string;
   /** url for website / youtube / image nodes */
   url?: string;
+  /** OPTIONAL — per-source instruction telling Claude how to use this
+   *  specific source on this board (e.g. "use as aesthetic reference only,
+   *  not strict guideline"). Lives on the node so the same source can be
+   *  used differently across boards. */
+  useFor?: string;
   /** embedded generation result for output nodes */
   output?: GenerationResult;
   width?: number;
@@ -146,4 +151,9 @@ export interface GenerateRequest {
   goal: string;
   sourceIds: string[];
   count?: number;
+  /** job-level instruction strings (e.g. "Talent never reads a script.") —
+   *  typically drawn from Note nodes the user fed in. */
+  instructions?: string[];
+  /** map of sourceId -> per-source "use this for" instruction */
+  sourceContext?: Record<string, string>;
 }

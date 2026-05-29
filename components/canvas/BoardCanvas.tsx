@@ -250,20 +250,33 @@ function CanvasInner({
       sourceId: src.id,
       text: src.summary,
       url: src.url,
+      useFor: payload.useFor,
     };
     setNodes((nds) => [...nds, toRf(node)]);
     setSelected((prev) => new Set(prev).add(id));
     setAdding(null);
   };
 
-  /* ---- source nodes available for feeding ---- */
+  /* ---- nodes available for feeding ---- */
   const sourceNodes = useMemo(
     () => nodes.filter((n) => n.data.node.kind !== "note" && n.data.node.kind !== "output"),
+    [nodes]
+  );
+  const noteNodes = useMemo(
+    () => nodes.filter((n) => n.data.node.kind === "note"),
     [nodes]
   );
   const fedSources = useMemo(
     () => sourceNodes.filter((n) => selected.has(n.id)).map((n) => n.data.node),
     [sourceNodes, selected]
+  );
+  const fedInstructions = useMemo(
+    () =>
+      noteNodes
+        .filter((n) => selected.has(n.id))
+        .map((n) => n.data.node.text?.trim() || "")
+        .filter(Boolean),
+    [noteNodes, selected]
   );
 
   /* ---- generate ---- */
@@ -272,11 +285,21 @@ function CanvasInner({
   ) => {
     const fed = fedSources.length ? fedSources : sourceNodes.map((n) => n.data.node);
     const sourceIds = fed.map((n) => n.sourceId).filter((v): v is string => !!v);
+    const sourceContext: Record<string, string> = {};
+    for (const n of fed) {
+      if (n.sourceId && n.useFor?.trim()) sourceContext[n.sourceId] = n.useFor.trim();
+    }
     setGenerating(true);
     try {
       const result = await api<GenerationResult>("/api/generate", {
         method: "POST",
-        body: JSON.stringify({ ...opts, boardId: board.id, sourceIds }),
+        body: JSON.stringify({
+          ...opts,
+          boardId: board.id,
+          sourceIds,
+          instructions: fedInstructions,
+          sourceContext,
+        }),
       });
       const id = nanoid();
       const node: BoardNode = {
@@ -420,6 +443,7 @@ function CanvasInner({
         }}
         fedSources={fedSources}
         allSourceCount={sourceNodes.length}
+        fedInstructionCount={fedInstructions.length}
         history={history}
         onOpenHistory={(r) => setOpenOutput(r)}
         generating={generating}
