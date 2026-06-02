@@ -5,12 +5,13 @@ import type { NodeKind } from "@/lib/types";
 import { KIND_META } from "./NodeChrome";
 
 export interface AddPayload {
-  kind: Exclude<NodeKind, "note" | "output">;
+  kind: Exclude<NodeKind, "note" | "output" | "group">;
   url?: string;
   title?: string;
   text?: string;
-  file?: File;
-  /** Optional per-source instruction for Claude (e.g. "aesthetic reference only"). */
+  /** One or more files when the user uploads. Empty array = no file. */
+  files?: File[];
+  /** Optional per-source instruction for Claude (applied to every file in the batch). */
   useFor?: string;
 }
 
@@ -40,7 +41,7 @@ export function AddSourceModal({
   onClose,
   onSubmit,
 }: {
-  kind: Exclude<NodeKind, "note" | "output">;
+  kind: Exclude<NodeKind, "note" | "output" | "group">;
   onClose: () => void;
   onSubmit: (p: AddPayload) => Promise<void>;
 }) {
@@ -50,12 +51,14 @@ export function AddSourceModal({
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
   const [useFor, setUseFor] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
+  const multi = files.length > 1;
+
   const valid =
-    !!file ||
+    files.length > 0 ||
     (copy.url ? url.trim().length > 4 : false) ||
     (copy.text ? text.trim().length > 2 : false);
 
@@ -66,9 +69,9 @@ export function AddSourceModal({
       await onSubmit({
         kind,
         url: url.trim() || undefined,
-        title: title.trim() || undefined,
+        title: !multi && title.trim() ? title.trim() : undefined,
         text: text.trim() || undefined,
-        file: file || undefined,
+        files: files.length > 0 ? files : undefined,
         useFor: useFor.trim() || undefined,
       });
     } finally {
@@ -76,9 +79,14 @@ export function AddSourceModal({
     }
   };
 
-  const pickFile = (f: File | null) => {
-    setFile(f);
-    if (f && !title.trim()) setTitle(f.name.replace(/\.[^.]+$/, ""));
+  const pickFiles = (incoming: File[]) => {
+    if (incoming.length === 0) return;
+    setFiles(incoming);
+    if (incoming.length === 1 && !title.trim()) {
+      setTitle(incoming[0].name.replace(/\.[^.]+$/, ""));
+    } else if (incoming.length > 1) {
+      setTitle(""); // titles per-file derive from filename on server
+    }
   };
 
   return (
@@ -109,16 +117,16 @@ export function AddSourceModal({
               <DropZone
                 accent={meta.accent}
                 accept={copy.file}
-                file={file}
-                onPick={pickFile}
+                files={files}
+                onPick={pickFiles}
                 onClear={() => {
-                  setFile(null);
+                  setFiles([]);
                   if (fileInput.current) fileInput.current.value = "";
                 }}
                 inputRef={fileInput}
                 isImage={kind === "image"}
               />
-              {(copy.text || copy.url) && !file && (
+              {(copy.text || copy.url) && files.length === 0 && (
                 <div className="flex items-center gap-3 py-1">
                   <span className="h-px flex-1 bg-[var(--line)]" />
                   <span className="label text-[var(--text-muted)]">or</span>
@@ -128,7 +136,7 @@ export function AddSourceModal({
             </>
           )}
 
-          {!file && copy.url && (
+          {files.length === 0 && copy.url && (
             <input
               autoFocus={!copy.file}
               value={url}
@@ -145,7 +153,7 @@ export function AddSourceModal({
             />
           )}
 
-          {!file && copy.text && (
+          {files.length === 0 && copy.text && (
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -155,12 +163,14 @@ export function AddSourceModal({
             />
           )}
 
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Title (optional)"
-            className="input"
-          />
+          {!multi && (
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Title (optional)"
+              className="input"
+            />
+          )}
 
           <div className="rounded-xl border border-[var(--line)] bg-[var(--bg-elevated)] p-3">
             <p className="label mb-1.5 flex items-center gap-2 text-[var(--text-muted)]">
@@ -190,7 +200,13 @@ export function AddSourceModal({
             Cancel
           </button>
           <button onClick={submit} disabled={!valid || busy} className="btn-chrome disabled:opacity-50">
-            {busy ? "Indexing…" : "Add to canvas"}
+            {busy
+              ? files.length > 1
+                ? `Indexing ${files.length} files…`
+                : "Indexing…"
+              : files.length > 1
+                ? `Add ${files.length} to canvas`
+                : "Add to canvas"}
           </button>
         </div>
       </div>
@@ -201,7 +217,7 @@ export function AddSourceModal({
 function DropZone({
   accent,
   accept,
-  file,
+  files,
   onPick,
   onClear,
   inputRef,
@@ -209,15 +225,16 @@ function DropZone({
 }: {
   accent: string;
   accept: string;
-  file: File | null;
-  onPick: (f: File | null) => void;
+  files: File[];
+  onPick: (files: File[]) => void;
   onClear: () => void;
   inputRef: React.RefObject<HTMLInputElement | null>;
   isImage: boolean;
 }) {
   const [drag, setDrag] = useState(false);
 
-  if (file) {
+  if (files.length === 1) {
+    const file = files[0];
     return (
       <div
         className="flex items-center gap-3 rounded-xl border px-3 py-3"
@@ -239,7 +256,9 @@ function DropZone({
           </span>
         )}
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] font-semibold text-[var(--text)]">{file.name}</p>
+          <p className="truncate text-[13px] font-semibold text-[var(--text)]">
+            {file.name}
+          </p>
           <p className="font-mono text-[11px] text-[var(--text-muted)]">
             {(file.size / 1024).toFixed(0)} KB · ready to index
           </p>
@@ -255,6 +274,54 @@ function DropZone({
     );
   }
 
+  if (files.length > 1) {
+    const totalKB = files.reduce((a, f) => a + f.size, 0) / 1024;
+    return (
+      <div
+        className="rounded-xl border px-3 py-3"
+        style={{ borderColor: accent }}
+      >
+        <div className="mb-2 flex items-center gap-3">
+          <span
+            className="grid h-9 w-9 place-items-center rounded-lg text-base"
+            style={{ background: `${accent}22`, color: accent }}
+          >
+            ▤▤
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px] font-semibold text-[var(--text)]">
+              {files.length} files selected
+            </p>
+            <p className="font-mono text-[11px] text-[var(--text-muted)]">
+              {totalKB.toFixed(0)} KB total · each becomes its own node
+            </p>
+          </div>
+          <button
+            onClick={onClear}
+            className="rounded-md px-2 py-1 text-[var(--text-muted)] hover:text-[var(--text)]"
+            title="Clear all"
+          >
+            ✕
+          </button>
+        </div>
+        <ul className="max-h-32 space-y-0.5 overflow-y-auto rounded-lg bg-[var(--bg-raised)] p-1.5">
+          {files.map((f, i) => (
+            <li
+              key={i}
+              className="flex items-center gap-2 truncate px-1.5 py-1 text-[11px] text-[var(--text-dim)]"
+            >
+              <span style={{ color: accent }}>•</span>
+              <span className="truncate">{f.name}</span>
+              <span className="ml-auto font-mono text-[10px] text-[var(--text-muted)]">
+                {(f.size / 1024).toFixed(0)} KB
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+
   return (
     <label
       onDragOver={(e) => {
@@ -265,8 +332,8 @@ function DropZone({
       onDrop={(e) => {
         e.preventDefault();
         setDrag(false);
-        const f = e.dataTransfer.files?.[0];
-        if (f) onPick(f);
+        const dropped = Array.from(e.dataTransfer.files ?? []);
+        if (dropped.length) onPick(dropped);
       }}
       className="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed px-4 py-7 text-center transition-colors"
       style={{
@@ -278,15 +345,22 @@ function DropZone({
         ⬆
       </span>
       <span className="text-[13px] font-semibold text-[var(--text)]">
-        Drop a file or click to browse
+        Drop files or click to browse
+      </span>
+      <span className="text-[11px] text-[var(--text-muted)]">
+        Pick one or several — Shift+click to multi-select
       </span>
       <span className="font-mono text-[10px] text-[var(--text-muted)]">{accept}</span>
       <input
         ref={inputRef}
         type="file"
         accept={accept}
+        multiple
         className="hidden"
-        onChange={(e) => onPick(e.target.files?.[0] ?? null)}
+        onChange={(e) => {
+          const picked = Array.from(e.target.files ?? []);
+          if (picked.length) onPick(picked);
+        }}
       />
     </label>
   );

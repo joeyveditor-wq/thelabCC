@@ -6,7 +6,7 @@ import { api, createSource } from "@/lib/client";
 import { KIND_META } from "@/components/canvas/NodeChrome";
 import { AddSourceModal, type AddPayload } from "@/components/canvas/AddSourceModal";
 
-type SourceKind = Exclude<NodeKind, "note" | "output">;
+type SourceKind = Exclude<NodeKind, "note" | "output" | "group">;
 const KINDS: SourceKind[] = ["pdf", "document", "website", "youtube", "image"];
 
 export function LibraryManager({
@@ -18,8 +18,26 @@ export function LibraryManager({
   const [adding, setAdding] = useState<SourceKind | null>(null);
 
   const add = async (p: AddPayload) => {
-    const src = await createSource(p);
-    setSources((prev) => [src, ...prev]);
+    const files = p.files ?? [];
+    if (files.length <= 1) {
+      const src = await createSource({
+        kind: p.kind,
+        url: p.url,
+        title: p.title,
+        text: p.text,
+        file: files[0],
+      });
+      setSources((prev) => [src, ...prev]);
+    } else {
+      const created = (
+        await Promise.all(
+          files.map((f) =>
+            createSource({ kind: p.kind, file: f }).catch(() => null)
+          )
+        )
+      ).filter((s): s is NonNullable<typeof s> => !!s);
+      setSources((prev) => [...created.reverse(), ...prev]);
+    }
     setAdding(null);
   };
 

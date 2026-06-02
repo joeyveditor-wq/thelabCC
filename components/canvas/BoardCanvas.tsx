@@ -33,7 +33,7 @@ import { GenerationPanel } from "./GenerationPanel";
 import { OutputCard } from "./OutputCard";
 import { AddSourceModal, type AddPayload } from "./AddSourceModal";
 
-type SourceKind = Exclude<NodeKind, "note" | "output">;
+type SourceKind = Exclude<NodeKind, "note" | "output" | "group">;
 const SOURCE_KINDS: SourceKind[] = ["pdf", "document", "website", "youtube", "image"];
 
 interface InitialData {
@@ -390,21 +390,86 @@ function CanvasInner({
   };
 
   const handleAddSource = async (payload: AddPayload) => {
-    const src = await createSource({ ...payload, boardId: board.id });
-    const id = nanoid();
-    const node: BoardNode = {
-      id,
-      boardId: board.id,
-      kind: src.kind,
-      position: spawnPosition(),
-      title: src.title,
-      sourceId: src.id,
-      text: src.summary,
-      url: src.url,
-      useFor: payload.useFor,
-    };
-    setNodes((nds) => [...nds, toRf(node)]);
-    setSelected((prev) => new Set(prev).add(id));
+    const files = payload.files ?? [];
+    const batch = files.length > 1;
+
+    // No file (pasted text / URL) OR exactly one file → single path
+    if (!batch) {
+      const single = files[0];
+      const src = await createSource({
+        kind: payload.kind,
+        url: payload.url,
+        title: payload.title,
+        text: payload.text,
+        file: single,
+        boardId: board.id,
+      });
+      const id = nanoid();
+      const node: BoardNode = {
+        id,
+        boardId: board.id,
+        kind: src.kind,
+        position: spawnPosition(),
+        title: src.title,
+        sourceId: src.id,
+        text: src.summary,
+        url: src.url,
+        useFor: payload.useFor,
+      };
+      setNodes((nds) => [...nds, toRf(node)]);
+      setSelected((prev) => new Set(prev).add(id));
+      setAdding(null);
+      return;
+    }
+
+    // Multi-file batch: upload all in parallel, then grid them on the canvas.
+    const center = spawnPosition();
+    const cols = Math.ceil(Math.sqrt(files.length));
+    const gapX = 300;
+    const gapY = 280;
+    const offset = (n: number) => (n - (cols - 1) / 2) * gapX;
+
+    const sources = await Promise.all(
+      files.map((f) =>
+        createSource({
+          kind: payload.kind,
+          file: f,
+          boardId: board.id,
+        }).catch(() => null)
+      )
+    );
+
+    const newNodes: Node<NodeData>[] = [];
+    const newIds: string[] = [];
+    sources.forEach((src, i) => {
+      if (!src) return;
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const id = nanoid();
+      const node: BoardNode = {
+        id,
+        boardId: board.id,
+        kind: src.kind,
+        position: {
+          x: center.x + offset(col),
+          y: center.y + row * gapY,
+        },
+        title: src.title,
+        sourceId: src.id,
+        text: src.summary,
+        url: src.url,
+        useFor: payload.useFor,
+      };
+      newNodes.push(toRf(node));
+      newIds.push(id);
+    });
+
+    setNodes((nds) => [...nds, ...newNodes]);
+    setSelected((prev) => {
+      const next = new Set(prev);
+      newIds.forEach((id) => next.add(id));
+      return next;
+    });
     setAdding(null);
   };
 
