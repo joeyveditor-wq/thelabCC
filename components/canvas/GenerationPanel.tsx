@@ -555,8 +555,8 @@ function GoalEditor({
         onChange={onChangeText}
         onKeyDown={onKeyDown}
         onBlur={() => setTimeout(() => setOpen(false), 120)}
-        rows={3}
-        className="input resize-none"
+        rows={4}
+        className="input resize-y min-h-[6rem] max-h-[60vh]"
         placeholder='What do you want the AI to make? Type @ to reference a group, e.g. @"Past examples".'
       />
       {open && matches.length > 0 && (
