@@ -14,6 +14,7 @@ export const KIND_META: Record<
   image: { label: "IMAGE", glyph: "◧", accent: "#8A2BE2" },
   note: { label: "NOTE", glyph: "✎", accent: "#FFE96B" },
   output: { label: "AI OUTPUT", glyph: "✦", accent: "#FF4FD8" },
+  group: { label: "GROUP", glyph: "▦", accent: "#4B2EC9" },
 };
 
 export function NodeShell({

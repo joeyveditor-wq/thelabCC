@@ -1,6 +1,6 @@
 import type { BrainSource, NodeKind } from "./types";
 
-type IngestKind = Exclude<NodeKind, "note" | "output">;
+type IngestKind = Exclude<NodeKind, "note" | "output" | "group">;
 
 export interface IngestInput {
   kind: IngestKind;

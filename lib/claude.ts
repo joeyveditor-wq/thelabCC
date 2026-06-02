@@ -10,6 +10,10 @@ interface GenInput {
   instructions?: string[];
   /** Per-source "use this for" map, keyed by source id. */
   sourceContext?: Record<string, string>;
+  /** Per-source group info, keyed by source id (name + optional instruction). */
+  sourceGroup?: Record<string, { name: string; instruction?: string }>;
+  /** All groups on the board (for @-mention resolution). */
+  groups?: { name: string; instruction?: string }[];
 }
 
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-4-7";
@@ -64,6 +68,17 @@ function buildSystem(input: GenInput): string {
         input.instructions.map((s) => s.trim()).filter(Boolean).join("\n- ")
     );
   }
+  if (input.groups && input.groups.length) {
+    parts.push(
+      'GROUPS ON THIS BOARD (the user may reference these by name in the goal — e.g. @"Past examples"):\n' +
+        input.groups
+          .map(
+            (g) =>
+              `- "${g.name}"${g.instruction ? " — " + g.instruction : ""}`
+          )
+          .join("\n")
+    );
+  }
   parts.push(
     'Return ONLY valid JSON: {"ideas":[{"format":string,"concept":string,"hooks":string[3-5],"prompts":string[2-4],"whyItWorks":string,"citations":string[],"variants":[{"label":string,"twist":string}]}]}'
   );
@@ -75,12 +90,17 @@ async function generateLive(input: GenInput): Promise<ContentIdea[]> {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
   const ctx = input.sourceContext ?? {};
+  const grp = input.sourceGroup ?? {};
   const sourceBlock = input.sources
     .map((s) => {
       const useFor = ctx[s.id]?.trim();
+      const group = grp[s.id];
       const head = `TITLE: ${s.title}\nTYPE: ${s.kind}`;
+      const groupLine = group
+        ? `\nGROUP: "${group.name}"${group.instruction ? `\nGROUP INSTRUCTION: ${group.instruction}` : ""}`
+        : "";
       const hint = useFor ? `\nUSE THIS FOR (user's instruction for THIS source): ${useFor}` : "";
-      return `${head}${hint}\nCONTENT: ${s.content}`;
+      return `${head}${groupLine}${hint}\nCONTENT: ${s.content}`;
     })
     .join("\n\n---\n\n");
 

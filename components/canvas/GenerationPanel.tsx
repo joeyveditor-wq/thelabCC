@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type {
   Board,
   BoardNode,
@@ -28,6 +28,7 @@ export function GenerationPanel({
   fedSources,
   allSourceCount,
   fedInstructionCount,
+  mentionables,
   history,
   onOpenHistory,
   generating,
@@ -40,6 +41,7 @@ export function GenerationPanel({
   fedSources: BoardNode[];
   allSourceCount: number;
   fedInstructionCount: number;
+  mentionables: { kind: "group" | "source"; label: string }[];
   history: HistoryEntry[];
   onOpenHistory: (r: GenerationResult) => void;
   generating: boolean;
@@ -93,6 +95,7 @@ export function GenerationPanel({
             fedSources={fedSources}
             allSourceCount={allSourceCount}
             fedInstructionCount={fedInstructionCount}
+            mentionables={mentionables}
             generating={generating}
             onGenerate={onGenerate}
           />
@@ -112,12 +115,14 @@ function ChatTab({
   fedSources,
   allSourceCount,
   fedInstructionCount,
+  mentionables,
   generating,
   onGenerate,
 }: {
   fedSources: BoardNode[];
   allSourceCount: number;
   fedInstructionCount: number;
+  mentionables: { kind: "group" | "source"; label: string }[];
   generating: boolean;
   onGenerate: (req: Omit<GenerateRequest, "boardId" | "sourceIds">) => void;
 }) {
@@ -179,13 +184,7 @@ function ChatTab({
         </Field>
 
         <Field label="Goal">
-          <textarea
-            value={goal}
-            onChange={(e) => setGoal(e.target.value)}
-            rows={3}
-            className="input resize-none"
-            placeholder="What do you want the AI to make?"
-          />
+          <GoalEditor value={goal} onChange={setGoal} mentionables={mentionables} />
           <div className="mt-2 flex flex-wrap gap-1.5">
             {GOAL_PRESETS.map((p) => (
               <button
@@ -197,6 +196,12 @@ function ChatTab({
               </button>
             ))}
           </div>
+          {mentionables.length > 0 && (
+            <p className="mt-1.5 text-[11px] text-[var(--text-muted)]">
+              Tip: type <span className="font-mono text-cc-magenta">@</span> to
+              reference a group or source.
+            </p>
+          )}
         </Field>
 
         <Field label="Concepts">
@@ -458,6 +463,135 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <div>
       <p className="label mb-1.5 text-[var(--text-muted)]">{label}</p>
       {children}
+    </div>
+  );
+}
+
+/* ------------------------- @-mention-aware textarea ----------------------- */
+
+function GoalEditor({
+  value,
+  onChange,
+  mentionables,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  mentionables: { kind: "group" | "source"; label: string }[];
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [atIdx, setAtIdx] = useState(-1);
+  const [active, setActive] = useState(0);
+
+  const matches = open
+    ? mentionables
+        .filter((m) =>
+          m.label.toLowerCase().includes(query.toLowerCase().trim())
+        )
+        .slice(0, 8)
+    : [];
+
+  const onChangeText = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const next = e.target.value;
+    onChange(next);
+    const caret = e.target.selectionStart ?? next.length;
+    // find the nearest unclosed @ before the caret
+    const upto = next.slice(0, caret);
+    const at = upto.lastIndexOf("@");
+    const tail = at >= 0 ? upto.slice(at + 1) : "";
+    // only valid if @ is start of line OR preceded by whitespace AND no whitespace in tail
+    const before = at > 0 ? upto[at - 1] : "";
+    const valid =
+      at >= 0 && (at === 0 || /\s/.test(before)) && !/\s/.test(tail);
+    if (valid) {
+      setAtIdx(at);
+      setQuery(tail);
+      setOpen(true);
+      setActive(0);
+    } else {
+      setOpen(false);
+    }
+  };
+
+  const insert = (m: { kind: "group" | "source"; label: string }) => {
+    if (atIdx < 0 || !ref.current) return;
+    const insertion = `@"${m.label}"`;
+    const before = value.slice(0, atIdx);
+    const after = value.slice((ref.current.selectionStart ?? atIdx) || atIdx);
+    const next = before + insertion + " " + after;
+    onChange(next);
+    setOpen(false);
+    // restore caret after insertion
+    requestAnimationFrame(() => {
+      if (!ref.current) return;
+      const pos = (before + insertion + " ").length;
+      ref.current.focus();
+      ref.current.setSelectionRange(pos, pos);
+    });
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!open || matches.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActive((a) => (a + 1) % matches.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActive((a) => (a - 1 + matches.length) % matches.length);
+    } else if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault();
+      insert(matches[active]);
+    } else if (e.key === "Escape") {
+      setOpen(false);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <textarea
+        ref={ref}
+        value={value}
+        onChange={onChangeText}
+        onKeyDown={onKeyDown}
+        onBlur={() => setTimeout(() => setOpen(false), 120)}
+        rows={3}
+        className="input resize-none"
+        placeholder='What do you want the AI to make? Type @ to reference a group, e.g. @"Past examples".'
+      />
+      {open && matches.length > 0 && (
+        <div className="absolute bottom-full left-0 right-0 z-20 mb-1 max-h-56 overflow-y-auto rounded-xl border border-[var(--line-strong)] bg-[var(--bg-floating)] p-1 shadow-glow">
+          {matches.map((m, i) => (
+            <button
+              key={m.kind + ":" + m.label}
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                insert(m);
+              }}
+              onMouseEnter={() => setActive(i)}
+              className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[12px] transition-colors ${
+                active === i ? "bg-cc-magenta/15 text-[var(--text)]" : "text-[var(--text-dim)]"
+              }`}
+            >
+              <span
+                className="grid h-5 w-5 place-items-center rounded-md text-[10px]"
+                style={{
+                  background:
+                    m.kind === "group" ? "rgba(75,46,201,0.25)" : "rgba(138,43,226,0.22)",
+                  color: m.kind === "group" ? "#8A2BE2" : "#FF7AA2",
+                }}
+              >
+                {m.kind === "group" ? "▦" : "◌"}
+              </span>
+              <span className="truncate">{m.label}</span>
+              <span className="ml-auto label text-[var(--text-muted)]">
+                {m.kind}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

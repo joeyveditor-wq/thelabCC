@@ -75,7 +75,11 @@ export function BoardCard({
         disabled={busy}
         title="Delete client"
         aria-label={`Delete client ${board.name}`}
-        className="absolute right-3 top-3 z-10 grid h-8 w-8 place-items-center rounded-full border border-[var(--line-strong)] bg-[var(--bg)]/80 text-[var(--text-muted)] backdrop-blur transition-colors hover:border-cc-coral hover:bg-cc-coral hover:text-black disabled:opacity-50"
+        className="absolute bottom-3 right-3 z-10 grid h-9 w-9 place-items-center rounded-full border border-cc-coral/60 bg-[var(--bg)]/80 text-cc-coral backdrop-blur transition-all hover:scale-110 hover:border-cc-coral hover:bg-cc-coral hover:text-black disabled:opacity-50"
+        style={{
+          boxShadow:
+            "0 0 0 1px rgba(255,122,162,0.18), 0 0 18px -2px rgba(255,122,162,0.55)",
+        }}
       >
         {busy ? "…" : "🗑"}
       </button>

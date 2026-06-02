@@ -5,7 +5,8 @@ export type NodeKind =
   | "youtube"
   | "image"
   | "note"
-  | "output";
+  | "output"
+  | "group";
 
 export interface CanvasPosition {
   x: number;
@@ -34,6 +35,12 @@ export interface BoardNode {
   /** embedded generation result for output nodes */
   output?: GenerationResult;
   width?: number;
+  height?: number;
+  /** If this node lives inside a group, the parent group node's id.
+   *  When set, the node's position is RELATIVE to the group's top-left. */
+  parentId?: string;
+  /** Only meaningful on group nodes — the AI instruction for every source in this group. */
+  groupInstruction?: string;
 }
 
 export interface BoardEdge {
@@ -156,4 +163,8 @@ export interface GenerateRequest {
   instructions?: string[];
   /** map of sourceId -> per-source "use this for" instruction */
   sourceContext?: Record<string, string>;
+  /** map of sourceId -> { name, instruction } of the group that source belongs to */
+  sourceGroup?: Record<string, { name: string; instruction?: string }>;
+  /** Every group on the board, so @-mentions in the goal resolve. */
+  groups?: { name: string; instruction?: string }[];
 }

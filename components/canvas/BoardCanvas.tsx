@@ -59,7 +59,7 @@ function CanvasInner({
 }: InitialData) {
   const [board, setBoard] = useState<Board>(initialBoard);
   const [history, setHistory] = useState<HistoryEntry[]>(initialHistory);
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, getIntersectingNodes, getNode } = useReactFlow<NodeData>();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [panelOpen, setPanelOpen] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -103,19 +103,33 @@ function CanvasInner({
   const openOutputModal = useCallback((r: GenerationResult) => setOpenOutput(r), []);
 
   const toRf = useCallback(
-    (n: BoardNode): Node<NodeData> => ({
-      id: n.id,
-      type: n.kind,
-      position: n.position,
-      data: {
-        node: n,
-        selected: false,
-        onToggle: () => toggleSelect(n.id),
-        onDelete: () => deleteNode(n.id),
-        onChange: (patch) => changeNode(n.id, patch),
-        onOpenOutput: openOutputModal,
-      },
-    }),
+    (n: BoardNode): Node<NodeData> => {
+      const rf: Node<NodeData> = {
+        id: n.id,
+        type: n.kind,
+        position: n.position,
+        data: {
+          node: n,
+          selected: false,
+          onToggle: () => toggleSelect(n.id),
+          onDelete: () => deleteNode(n.id),
+          onChange: (patch) => changeNode(n.id, patch),
+          onOpenOutput: openOutputModal,
+        },
+      };
+      if (n.kind === "group") {
+        rf.style = { width: n.width ?? 460, height: n.height ?? 340 };
+        rf.zIndex = 0;
+      } else {
+        rf.zIndex = 1;
+      }
+      if (n.parentId) {
+        rf.parentNode = n.parentId;
+        // Intentionally NOT using extent: "parent" — we allow dragging children
+        // out, which removes them from the group (the agreed UX).
+      }
+      return rf;
+    },
     [toggleSelect, deleteNode, changeNode, openOutputModal]
   );
 
@@ -142,6 +156,116 @@ function CanvasInner({
       setEdges((eds) => addEdge({ ...c, id: nanoid(), animated: true }, eds)),
     [setEdges]
   );
+
+  /* ---- drag-into / drag-out of group nodes ---- */
+  const onNodeDragStop = useCallback(
+    (_e: React.MouseEvent, draggedRf: Node<NodeData>) => {
+      if (draggedRf.data?.node.kind === "group") return; // groups don't nest
+
+      // Compute the dragged node's ABSOLUTE position (children store relative)
+      let absX = draggedRf.position.x;
+      let absY = draggedRf.position.y;
+      const oldParentId = draggedRf.data?.node.parentId;
+      if (oldParentId) {
+        const p = getNode(oldParentId);
+        if (p) {
+          absX += p.position.x;
+          absY += p.position.y;
+        }
+      }
+
+      // Build a temp node at absolute position for intersection testing
+      const probe: Node<NodeData> = {
+        ...draggedRf,
+        position: { x: absX, y: absY },
+        parentNode: undefined,
+      };
+      const hits = getIntersectingNodes(probe).filter(
+        (n) => n.data?.node.kind === "group" && n.id !== draggedRf.id
+      );
+      const newGroup = hits[0]; // pick first hit (top-most)
+
+      if (!newGroup && !oldParentId) return; // no change
+      if (newGroup && newGroup.id === oldParentId) return; // still in same group
+
+      setNodes((nds) =>
+        nds.map((n) => {
+          if (n.id !== draggedRf.id) return n;
+          if (newGroup) {
+            const relX = absX - newGroup.position.x;
+            const relY = absY - newGroup.position.y;
+            return {
+              ...n,
+              position: { x: relX, y: relY },
+              parentNode: newGroup.id,
+              data: { ...n.data, node: { ...n.data.node, parentId: newGroup.id } },
+            };
+          }
+          // dropped outside any group — strip parent, restore absolute position
+          const stripped = { ...n.data.node };
+          delete stripped.parentId;
+          return {
+            ...n,
+            position: { x: absX, y: absY },
+            parentNode: undefined,
+            data: { ...n.data, node: stripped },
+          };
+        })
+      );
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [getIntersectingNodes, getNode]
+  );
+
+  /* ---- group feed: toggle all children's selection together ---- */
+  const feedGroup = useCallback(
+    (groupId: string) => {
+      setSelected((prev) => {
+        const next = new Set(prev);
+        const childIds = nodes
+          .filter((n) => n.data.node.parentId === groupId && n.data.node.kind !== "note" && n.data.node.kind !== "output")
+          .map((n) => n.id);
+        if (childIds.length === 0) return prev;
+        const allFed = childIds.every((id) => next.has(id));
+        if (allFed) childIds.forEach((id) => next.delete(id));
+        else childIds.forEach((id) => next.add(id));
+        return next;
+      });
+    },
+    [nodes]
+  );
+
+  /* inject group helpers + child counts into group node data on every change */
+  useEffect(() => {
+    setNodes((nds) => {
+      let changed = false;
+      const next = nds.map((n) => {
+        if (n.data.node.kind !== "group") return n;
+        const children = nds.filter(
+          (c) =>
+            c.data.node.parentId === n.id &&
+            c.data.node.kind !== "note" &&
+            c.data.node.kind !== "output"
+        );
+        const fedCount = children.filter((c) => selected.has(c.id)).length;
+        const newData = {
+          ...n.data,
+          onFeedGroup: () => feedGroup(n.id),
+          groupCount: { total: children.length, fed: fedCount },
+        };
+        if (
+          n.data.onFeedGroup &&
+          n.data.groupCount?.total === newData.groupCount.total &&
+          n.data.groupCount?.fed === newData.groupCount.fed
+        ) {
+          return n;
+        }
+        changed = true;
+        return { ...n, data: newData };
+      });
+      return changed ? next : nds;
+    });
+  }, [nodes.length, selected, feedGroup, setNodes]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ---- autosave ----
      The latest graph lives in a ref so we can save imperatively (on change,
@@ -238,6 +362,20 @@ function CanvasInner({
     setNodes((nds) => [...nds, toRf(node)]);
   };
 
+  const addGroupNode = () => {
+    const id = nanoid();
+    const node: BoardNode = {
+      id,
+      boardId: board.id,
+      kind: "group",
+      position: spawnPosition(),
+      title: "",
+      width: 460,
+      height: 340,
+    };
+    setNodes((nds) => [toRf(node), ...nds]); // unshift so it renders behind children
+  };
+
   const handleAddSource = async (payload: AddPayload) => {
     const src = await createSource({ ...payload, boardId: board.id });
     const id = nanoid();
@@ -289,6 +427,28 @@ function CanvasInner({
     for (const n of fed) {
       if (n.sourceId && n.useFor?.trim()) sourceContext[n.sourceId] = n.useFor.trim();
     }
+
+    /* group references — by source id + flat groups list */
+    const groupNodesById = new Map(
+      nodes
+        .filter((n) => n.data.node.kind === "group" && n.data.node.title?.trim())
+        .map((n) => [n.id, n.data.node])
+    );
+    const sourceGroup: Record<string, { name: string; instruction?: string }> = {};
+    for (const n of fed) {
+      if (!n.sourceId || !n.parentId) continue;
+      const g = groupNodesById.get(n.parentId);
+      if (!g) continue;
+      sourceGroup[n.sourceId] = {
+        name: g.title,
+        instruction: g.groupInstruction?.trim() || undefined,
+      };
+    }
+    const groups = [...groupNodesById.values()].map((g) => ({
+      name: g.title,
+      instruction: g.groupInstruction?.trim() || undefined,
+    }));
+
     setGenerating(true);
     try {
       const result = await api<GenerationResult>("/api/generate", {
@@ -299,6 +459,8 @@ function CanvasInner({
           sourceIds,
           instructions: fedInstructions,
           sourceContext,
+          sourceGroup,
+          groups,
         }),
       });
       const id = nanoid();
@@ -355,6 +517,7 @@ function CanvasInner({
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onNodeDragStop={onNodeDragStop}
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.3, maxZoom: 1 }}
@@ -387,9 +550,17 @@ function CanvasInner({
         <button
           onClick={addNoteNode}
           className="pointer-events-auto rounded-xl px-3 py-2 text-[12px] font-semibold text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-floating)] hover:text-[var(--text)]"
-          title="Add note"
+          title="Add note (pin as instruction)"
         >
           ✎ Note
+        </button>
+        <span className="h-5 w-px bg-[var(--line-strong)]" />
+        <button
+          onClick={addGroupNode}
+          className="pointer-events-auto rounded-xl px-3 py-2 text-[12px] font-semibold text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-floating)] hover:text-[var(--text)]"
+          title="Add group — drag sources inside to cluster them"
+        >
+          <span style={{ color: KIND_META.group.accent }}>▦</span> Group
         </button>
       </div>
 
@@ -444,6 +615,15 @@ function CanvasInner({
         fedSources={fedSources}
         allSourceCount={sourceNodes.length}
         fedInstructionCount={fedInstructions.length}
+        mentionables={[
+          ...nodes
+            .filter((n) => n.data.node.kind === "group" && n.data.node.title?.trim())
+            .map((n) => ({ kind: "group" as const, label: n.data.node.title })),
+          ...sourceNodes.map((n) => ({
+            kind: "source" as const,
+            label: n.data.node.title,
+          })),
+        ]}
         history={history}
         onOpenHistory={(r) => setOpenOutput(r)}
         generating={generating}

@@ -14,6 +14,10 @@ export interface NodeData {
   onDelete?: () => void;
   onChange?: (patch: Partial<BoardNode>) => void;
   onOpenOutput?: (result: GenerationResult) => void;
+  /** For groups only: toggles selection on every child source. */
+  onFeedGroup?: () => void;
+  /** For groups only: how many children, how many of them are fed. */
+  groupCount?: { total: number; fed: number };
 }
 
 const SourceNode = memo(({ data }: NodeProps<NodeData>) => {
@@ -208,6 +212,81 @@ const OutputNode = memo(({ data }: NodeProps<NodeData>) => {
 });
 OutputNode.displayName = "OutputNode";
 
+const GroupNode = memo(({ data }: NodeProps<NodeData>) => {
+  const { node } = data;
+  const w = node.width ?? 460;
+  const h = node.height ?? 340;
+  const count = data.groupCount ?? { total: 0, fed: 0 };
+  const allFed = count.total > 0 && count.fed === count.total;
+
+  return (
+    <div
+      className="group relative rounded-3xl border-2 border-dashed transition-colors"
+      style={{
+        width: w,
+        height: h,
+        borderColor: allFed ? "#FF4FD8" : "rgba(75, 46, 201, 0.55)",
+        background:
+          "linear-gradient(180deg, rgba(75,46,201,0.08), rgba(75,46,201,0.02))",
+        boxShadow: allFed
+          ? "0 0 0 1px rgba(255,79,216,0.4), 0 16px 60px -20px rgba(255,79,216,0.4)"
+          : undefined,
+      }}
+    >
+      <div className="nodrag absolute -top-1 left-3 right-3 flex items-center gap-2 -translate-y-1/2 rounded-xl border border-[var(--line-strong)] bg-[var(--bg-raised)] px-3 py-1.5 shadow-node">
+        <span
+          className="grid h-5 w-5 place-items-center rounded-md text-[11px]"
+          style={{ background: "rgba(75,46,201,0.25)", color: "#8A2BE2" }}
+        >
+          ▦
+        </span>
+        <span className="label text-cc-violet" style={{ letterSpacing: "0.16em" }}>
+          GROUP
+        </span>
+        <input
+          value={node.title}
+          placeholder="Group name (e.g. Past examples)"
+          onChange={(e) => data.onChange?.({ title: e.target.value })}
+          className="min-w-0 flex-1 bg-transparent text-[13px] font-semibold text-[var(--text)] outline-none placeholder:text-[var(--text-muted)]"
+        />
+        <button
+          onClick={data.onFeedGroup}
+          title={allFed ? "Unfeed all sources in this group" : "Feed all sources in this group"}
+          className="rounded-md border px-1.5 py-0.5 text-[10px] transition-colors"
+          style={{
+            borderColor: allFed ? "#FF4FD8" : "var(--line-strong)",
+            color: allFed ? "#0a0a0a" : "var(--text-muted)",
+            background: allFed ? "#FF4FD8" : "transparent",
+          }}
+          disabled={count.total === 0}
+        >
+          {allFed ? "✓ FED" : `+ FEED ${count.total ? `(${count.total})` : ""}`}
+        </button>
+        {data.onDelete && (
+          <button
+            onClick={data.onDelete}
+            title="Delete group (children move out)"
+            className="rounded-md px-1 text-[var(--text-muted)] opacity-0 transition-opacity hover:text-[var(--text)] group-hover:opacity-100"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      <div className="nodrag absolute left-3 right-3 top-7">
+        <textarea
+          value={node.groupInstruction ?? ""}
+          placeholder="Tell Claude how to use everything in this group (optional). E.g. 'Use as reference for structure, not voice.'"
+          onChange={(e) => data.onChange?.({ groupInstruction: e.target.value })}
+          rows={2}
+          className="w-full resize-none rounded-lg border border-cc-violet/30 bg-cc-violet/10 px-2 py-1.5 text-[11px] leading-relaxed text-[var(--text-dim)] outline-none placeholder:text-[var(--text-muted)] focus:border-cc-violet"
+        />
+      </div>
+    </div>
+  );
+});
+GroupNode.displayName = "GroupNode";
+
 export const nodeTypes = {
   pdf: SourceNode,
   document: SourceNode,
@@ -216,6 +295,7 @@ export const nodeTypes = {
   image: SourceNode,
   note: NoteNode,
   output: OutputNode,
+  group: GroupNode,
 } as const;
 
 export type { BoardNode };
