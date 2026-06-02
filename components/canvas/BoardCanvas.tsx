@@ -27,7 +27,7 @@ import type {
   NodeKind,
 } from "@/lib/types";
 import { api, createSource } from "@/lib/client";
-import { nodeTypes, type NodeData } from "./nodeTypes";
+import { nodeTypes, type NodeData, GROUP_HEADER_HEIGHT } from "./nodeTypes";
 import { KIND_META } from "./NodeChrome";
 import { GenerationPanel } from "./GenerationPanel";
 import { OutputCard } from "./OutputCard";
@@ -193,7 +193,10 @@ function CanvasInner({
           if (n.id !== draggedRf.id) return n;
           if (newGroup) {
             const relX = absX - newGroup.position.x;
-            const relY = absY - newGroup.position.y;
+            const rawRelY = absY - newGroup.position.y;
+            // Keep the dropped node clear of the group's header zone so the
+            // group's instruction textarea stays visible.
+            const relY = Math.max(rawRelY, GROUP_HEADER_HEIGHT + 8);
             return {
               ...n,
               position: { x: relX, y: relY },
@@ -277,11 +280,21 @@ function CanvasInner({
   const buildPayload = useCallback(() => {
     const { nodes, edges } = graphRef.current;
     return JSON.stringify({
-      nodes: nodes.map((n) => ({
-        ...n.data.node,
-        position: n.position,
-        boardId: board.id,
-      })),
+      nodes: nodes.map((n) => {
+        const base = {
+          ...n.data.node,
+          position: n.position,
+          boardId: board.id,
+        };
+        // Groups: persist the current (possibly resized) dimensions from RF style.
+        if (n.data.node.kind === "group") {
+          const w = typeof n.style?.width === "number" ? n.style.width : n.width;
+          const h = typeof n.style?.height === "number" ? n.style.height : n.height;
+          if (typeof w === "number") base.width = w;
+          if (typeof h === "number") base.height = h;
+        }
+        return base;
+      }),
       edges: edges.map((e) => ({
         id: e.id,
         boardId: board.id,
