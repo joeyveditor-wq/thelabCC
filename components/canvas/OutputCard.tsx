@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { GenerationResult } from "@/lib/types";
-import { copyText, downloadMarkdown } from "@/lib/client";
+import { copyText, exportToGoogleDoc } from "@/lib/client";
 import { ideaToMarkdown, resultToMarkdown } from "@/lib/markdown";
 
 export function OutputCard({
@@ -25,13 +25,12 @@ export function OutputCard({
     <div className="flex h-full flex-col">
       <div className="flex items-start gap-4 border-b border-[var(--line)] p-5">
         <div className="min-w-0 flex-1">
-          <p className="label mb-1 text-cc-magenta">Generation</p>
-          <h2 className="display text-2xl leading-tight text-[var(--text)]">
+          <p className="label mb-2 text-cc-magenta">Concepts</p>
+          <h2 className="font-sans text-[17px] font-semibold leading-snug text-[var(--text)]">
             {result.goal}
           </h2>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             <Tag>{result.ideas.length} concepts</Tag>
-            <Tag>{result.model}</Tag>
             <Tag>{result.grounded ? "grounded" : "ungrounded"}</Tag>
             {result.sourceTitles.map((t) => (
               <Tag key={t} accent>
@@ -58,14 +57,12 @@ export function OutputCard({
         </button>
         <button
           className="btn-ghost"
-          onClick={() =>
-            downloadMarkdown(
-              `idea-lab-${result.id.slice(0, 6)}.md`,
-              resultToMarkdown(result)
-            )
-          }
+          onClick={async () => {
+            const ok = await exportToGoogleDoc(resultToMarkdown(result));
+            if (ok) flash("doc");
+          }}
         >
-          Export .md
+          {copied === "doc" ? "✓ Copied · paste in the new doc" : "Export to Google Doc"}
         </button>
         {onRegenerate && (
           <button className="btn-chrome ml-auto" onClick={onRegenerate}>

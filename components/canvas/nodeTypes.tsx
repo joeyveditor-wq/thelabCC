@@ -110,7 +110,7 @@ function UseForEditor({
             if (trimmed !== (value ?? "")) onChange(trimmed);
           }}
           rows={3}
-          placeholder="How should Claude use this source?"
+          placeholder="How should the lab use this source?"
           className="nodrag w-full resize-none bg-transparent text-[11px] leading-relaxed text-[var(--text)] outline-none placeholder:text-[var(--text-muted)]"
         />
       </div>
@@ -125,7 +125,7 @@ function UseForEditor({
           setEditing(true);
         }}
         className="mt-2 block w-full rounded-lg border border-cc-magenta/40 bg-cc-magenta/10 p-1.5 text-left transition-colors hover:border-cc-magenta"
-        title="Edit Claude instruction for this source"
+        title="Edit the lab's instruction for this source"
       >
         <p className="label mb-1 flex items-center gap-1 text-[10px] text-cc-magenta">
           <span>⌘</span> USE THIS FOR · ✎
@@ -144,9 +144,9 @@ function UseForEditor({
         setEditing(true);
       }}
       className="mt-2 w-full rounded-lg border border-dashed border-[var(--line-strong)] px-2 py-1.5 text-[10px] text-[var(--text-muted)] transition-colors hover:border-cc-magenta hover:text-[var(--text)]"
-      title="Add a Claude instruction for this source"
+      title="Add a lab instruction for this source"
     >
-      + Tell Claude how to use this
+      + Tell the lab how to use this
     </button>
   );
 }
@@ -167,7 +167,7 @@ const NoteNode = memo(({ data }: NodeProps<NodeData>) => {
       </p>
       <textarea
         defaultValue={node.text}
-        placeholder="A pinned instruction for Claude. E.g. 'Talent never reads a script.' Hit + FEED above to include it on the next generation."
+        placeholder="A pinned instruction for the lab. E.g. 'Talent never reads a script.' Hit + FEED above to include it on the next generation."
         onBlur={(e) => data.onChange?.({ text: e.target.value })}
         className="nodrag min-h-[84px] w-full resize-none bg-transparent text-[13px] leading-relaxed text-[var(--text)] outline-none placeholder:text-[var(--text-muted)]"
       />
@@ -300,7 +300,7 @@ const GroupNode = memo(({ data, selected }: NodeProps<NodeData>) => {
           <div className="px-3 pt-1.5">
             <textarea
               value={node.groupInstruction ?? ""}
-              placeholder="Tell Claude how to use everything in this group (optional). E.g. 'Use as reference for structure, not voice.'"
+              placeholder="Tell the lab how to use everything in this group (optional). E.g. 'Use as reference for structure, not voice.'"
               onChange={(e) => data.onChange?.({ groupInstruction: e.target.value })}
               rows={1}
               className="w-full resize-none rounded-lg border border-cc-violet/30 bg-cc-violet/10 px-2 py-1 text-[11px] leading-relaxed text-[var(--text-dim)] outline-none placeholder:text-[var(--text-muted)] focus:border-cc-violet"

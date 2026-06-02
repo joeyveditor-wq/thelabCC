@@ -63,6 +63,102 @@ export function downloadMarkdown(filename: string, markdown: string) {
   URL.revokeObjectURL(url);
 }
 
+/** Tiny markdown -> HTML converter for our generation output. Covers the
+ *  subset we emit: headings, bold, bullets, blockquotes, hr, paragraphs.
+ *  Output is suitable for clipboard "text/html" — Google Docs preserves the
+ *  formatting on paste. */
+export function markdownToHtml(md: string): string {
+  const escape = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const inline = (s: string) =>
+    escape(s)
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/(^|\s)_([^_]+)_(?=\s|$)/g, "$1<em>$2</em>");
+
+  const lines = md.replace(/\r\n/g, "\n").split("\n");
+  const out: string[] = [];
+  let listOpen = false;
+  let paraBuf: string[] = [];
+
+  const flushPara = () => {
+    if (paraBuf.length) {
+      out.push("<p>" + inline(paraBuf.join(" ")) + "</p>");
+      paraBuf = [];
+    }
+  };
+  const closeList = () => {
+    if (listOpen) {
+      out.push("</ul>");
+      listOpen = false;
+    }
+  };
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) {
+      flushPara();
+      closeList();
+      continue;
+    }
+    if (line === "---") {
+      flushPara();
+      closeList();
+      out.push("<hr />");
+      continue;
+    }
+    const h = /^(#{1,6})\s+(.+)$/.exec(line);
+    if (h) {
+      flushPara();
+      closeList();
+      const level = h[1].length;
+      out.push(`<h${level}>${inline(h[2])}</h${level}>`);
+      continue;
+    }
+    if (line.startsWith("> ")) {
+      flushPara();
+      closeList();
+      out.push("<blockquote>" + inline(line.slice(2)) + "</blockquote>");
+      continue;
+    }
+    if (/^[-*]\s+/.test(line)) {
+      flushPara();
+      if (!listOpen) {
+        out.push("<ul>");
+        listOpen = true;
+      }
+      out.push("<li>" + inline(line.replace(/^[-*]\s+/, "")) + "</li>");
+      continue;
+    }
+    paraBuf.push(line);
+  }
+  flushPara();
+  closeList();
+  return `<div style="font-family:Arial,sans-serif;line-height:1.5">${out.join("\n")}</div>`;
+}
+
+/** Copies HTML + plain-text markdown to the clipboard and opens a fresh
+ *  Google Doc in a new tab. The user pastes (Ctrl/Cmd+V) into the new doc
+ *  and Google preserves the HTML formatting. */
+export async function exportToGoogleDoc(markdown: string): Promise<boolean> {
+  const html = markdownToHtml(markdown);
+  try {
+    if (typeof ClipboardItem !== "undefined") {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          "text/html": new Blob([html], { type: "text/html" }),
+          "text/plain": new Blob([markdown], { type: "text/plain" }),
+        }),
+      ]);
+    } else {
+      await navigator.clipboard.writeText(markdown);
+    }
+  } catch {
+    return false;
+  }
+  window.open("https://docs.google.com/document/create", "_blank", "noopener");
+  return true;
+}
+
 export async function copyText(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);

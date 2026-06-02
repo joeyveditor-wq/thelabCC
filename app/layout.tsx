@@ -5,7 +5,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 export const metadata: Metadata = {
   title: "The Idea Lab — by CHEATCODE",
   description:
-    "A visual, AI-powered content ideation workspace. Drag your sources onto an infinite canvas and generate grounded content concepts.",
+    "A visual content ideation workspace. Drag your sources onto an infinite canvas and generate grounded content concepts.",
 };
 
 export default function RootLayout({

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   Board,
   BoardNode,
@@ -134,7 +134,7 @@ function ChatTab({
   return (
     <div className="flex h-full flex-col">
       <div className="space-y-5 p-5">
-        <Field label="What's feeding the AI">
+        <Field label="What's feeding the lab">
           {usingAll && fedInstructionCount === 0 ? (
             <p className="rounded-xl border border-dashed border-[var(--line-strong)] px-3 py-2.5 text-[12px] text-[var(--text-muted)]">
               Using all <span className="text-[var(--text)]">{allSourceCount}</span>{" "}
@@ -220,13 +220,17 @@ function ChatTab({
       </div>
 
       <div className="mt-auto border-t border-[var(--line)] p-5">
-        <button
-          disabled={generating || !goal.trim()}
-          onClick={() => onGenerate({ goal, count })}
-          className="btn-chrome w-full !py-3 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {generating ? "Generating…" : "✦ Generate concepts"}
-        </button>
+        {generating ? (
+          <GenerationStatus />
+        ) : (
+          <button
+            disabled={!goal.trim()}
+            onClick={() => onGenerate({ goal, count })}
+            className="btn-chrome w-full !py-3 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            ✦ Generate concepts
+          </button>
+        )}
       </div>
     </div>
   );
@@ -244,7 +248,7 @@ function BrandTab({
   return (
     <div className="space-y-4 p-5">
       <p className="text-[12px] leading-relaxed text-[var(--text-muted)]">
-        Everything here gets fed to the AI on every generation. Edit anything —
+        Everything here gets fed to the lab on every generation. Edit anything —
         it auto-saves.
       </p>
 
@@ -458,6 +462,50 @@ function HistoryTab({
   );
 }
 
+function GenerationStatus() {
+  const [t, setT] = useState(0);
+  useEffect(() => {
+    const start = performance.now();
+    const id = setInterval(() => setT((performance.now() - start) / 1000), 250);
+    return () => clearInterval(id);
+  }, []);
+
+  let label: string;
+  let glyph: string;
+  if (t < 3) {
+    glyph = "◐";
+    label = "Reading sources";
+  } else if (t < 12) {
+    glyph = "✦";
+    label = "Cooking concepts";
+  } else if (t < 30) {
+    glyph = "◑";
+    label = "Polishing";
+  } else {
+    glyph = "◌";
+    label = "Still working — complex briefs sometimes run long";
+  }
+
+  return (
+    <div
+      className="relative w-full overflow-hidden rounded-full py-3 text-center font-mono text-[12px] uppercase tracking-[0.14em] text-black"
+      style={{
+        background:
+          "linear-gradient(100deg, #2B2BFF, #4B2EC9, #8A2BE2, #FF4FD8, #FF7AA2, #FFC04D, #FFE96B, #FF4FD8, #8A2BE2, #2B2BFF)",
+        backgroundSize: "300% 100%",
+        animation: "sheen 2.4s linear infinite",
+        boxShadow: "0 10px 36px -10px rgba(255,79,216,0.55)",
+      }}
+    >
+      <span className="relative font-semibold">
+        <span className="mr-2 inline-block animate-pulse">{glyph}</span>
+        {label}
+        <span className="ml-3 text-black/70">· {t.toFixed(1)}s</span>
+      </span>
+    </div>
+  );
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
@@ -557,7 +605,7 @@ function GoalEditor({
         onBlur={() => setTimeout(() => setOpen(false), 120)}
         rows={4}
         className="input resize-y min-h-[6rem] max-h-[60vh]"
-        placeholder='What do you want the AI to make? Type @ to reference a group, e.g. @"Past examples".'
+        placeholder='What do you want the lab to make? Type @ to reference a group, e.g. @"Past examples".'
       />
       {open && matches.length > 0 && (
         <div className="absolute bottom-full left-0 right-0 z-20 mb-1 max-h-56 overflow-y-auto rounded-xl border border-[var(--line-strong)] bg-[var(--bg-floating)] p-1 shadow-glow">

@@ -718,13 +718,14 @@ function CanvasInner({
 
       {openOutput && (
         <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-6 backdrop-blur-sm"
+          className="modal-backdrop-enter fixed inset-0 z-50 grid place-items-center bg-black/70 p-6 backdrop-blur-sm"
           onClick={() => setOpenOutput(null)}
         >
           <div
-            className="h-[86vh] w-full max-w-2xl overflow-hidden rounded-3xl border border-[var(--line-strong)] bg-[var(--bg-raised)] shadow-glow"
+            className="modal-concept-enter relative h-[86vh] w-full max-w-2xl overflow-hidden rounded-3xl border border-[var(--line-strong)] bg-[var(--bg-raised)]"
             onClick={(e) => e.stopPropagation()}
           >
+            <span className="modal-concept-flash" />
             <OutputCard
               result={openOutput}
               onClose={() => setOpenOutput(null)}

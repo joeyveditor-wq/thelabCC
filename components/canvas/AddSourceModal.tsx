@@ -175,7 +175,7 @@ export function AddSourceModal({
           <div className="rounded-xl border border-[var(--line)] bg-[var(--bg-elevated)] p-3">
             <p className="label mb-1.5 flex items-center gap-2 text-[var(--text-muted)]">
               <span className="text-cc-magenta">⌘</span>
-              Tell Claude how to use this (optional)
+              Tell the lab how to use this (optional)
             </p>
             <textarea
               value={useFor}

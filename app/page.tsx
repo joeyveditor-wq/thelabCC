@@ -40,8 +40,8 @@ export default async function Dashboard() {
           </h1>
           <p className="mt-6 max-w-xl text-base leading-relaxed text-[var(--text-dim)]">
             Each client gets their own board. Drop their sources — PDFs, links,
-            videos, notes — and the AI generates concepts in their voice, grounded
-            only in what you loaded.
+            videos, notes — and the lab generates concepts in their voice,
+            grounded only in what you loaded.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <NewClient />
