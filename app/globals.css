@@ -191,6 +191,43 @@ body {
   animation: rise-in 0.3s ease-out both;
 }
 
+/* ---- Concepts output node: a small treasure on the canvas ---- */
+@keyframes trophy-glow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(255, 79, 216, 0.55),
+      0 18px 60px -20px rgba(255, 79, 216, 0.55),
+      0 0 60px -10px rgba(255, 192, 77, 0.25);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(255, 79, 216, 0.9),
+      0 22px 70px -16px rgba(255, 79, 216, 0.7),
+      0 0 80px -8px rgba(255, 192, 77, 0.4);
+  }
+}
+.concept-trophy {
+  position: relative;
+  padding: 2px;
+  border-radius: 1.05rem;
+  background: linear-gradient(
+    120deg,
+    #2b2bff,
+    #4b2ec9,
+    #8a2be2,
+    #ff4fd8,
+    #ff7aa2,
+    #ffc04d,
+    #ffe96b,
+    #ff4fd8,
+    #2b2bff
+  );
+  background-size: 300% 100%;
+  animation:
+    sheen 7s linear infinite,
+    trophy-glow 3.2s ease-in-out infinite;
+}
+
 .chrome-rule {
   height: 1px;
   background: linear-gradient(
@@ -306,8 +343,42 @@ body {
 .react-flow__attribution {
   display: none;
 }
+
+/* Kill RF's default white/gray node bg, border, and padding. We render our
+   own card; RF should only own positioning. Without this the default
+   .react-flow__node-output / -group rectangles peek out behind our cards. */
+.react-flow__node-default,
+.react-flow__node-input,
+.react-flow__node-output,
+.react-flow__node-group {
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  color: inherit;
+  width: auto;
+  font-size: inherit;
+  text-align: left;
+}
+.react-flow__node.selected {
+  box-shadow: none;
+}
+
+/* Edges feeding the canvas: bright magenta, thicker, glowing */
 .react-flow__edge-path {
-  stroke-width: 1.6;
+  stroke: #ff4fd8;
+  stroke-width: 2;
+  opacity: 0.85;
+}
+.react-flow__edge.animated .react-flow__edge-path {
+  stroke-width: 2.4;
+  stroke-dasharray: 10 6;
+  filter: drop-shadow(0 0 4px rgba(255, 79, 216, 0.55));
+}
+.react-flow__edge.selected .react-flow__edge-path,
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke: #ffc04d;
+  opacity: 1;
 }
 .react-flow__handle {
   width: 10px;

@@ -2,7 +2,7 @@
 
 import { memo, useState } from "react";
 import Image from "next/image";
-import type { NodeProps } from "reactflow";
+import { Handle, Position, type NodeProps } from "reactflow";
 import { NodeResizer } from "@reactflow/node-resizer";
 import "@reactflow/node-resizer/dist/style.css";
 import type { BoardNode, GenerationResult } from "@/lib/types";
@@ -180,39 +180,92 @@ const OutputNode = memo(({ data }: NodeProps<NodeData>) => {
   const { node } = data;
   const r = node.output;
   return (
-    <NodeShell
-      kind="output"
-      onDelete={data.onDelete}
-      width={320}
+    <div
+      className="concept-trophy group relative animate-rise-in"
+      style={{ width: 340 }}
     >
-      <p className="mb-1 line-clamp-2 text-[13px] font-semibold leading-snug text-[var(--text)]">
-        {r?.goal ?? node.title}
-      </p>
-      <div className="mb-2 flex flex-wrap gap-1.5">
-        <span className="label rounded-full border border-[var(--line-strong)] px-2 py-0.5 text-[var(--text-muted)]">
-          {r?.ideas.length ?? 0} ideas
-        </span>
-        <span className="label rounded-full border border-[var(--line-strong)] px-2 py-0.5 text-[var(--text-muted)]">
-          {r?.grounded ? "grounded" : "ungrounded"}
-        </span>
-      </div>
-      {r?.ideas[0] && (
-        <div className="rounded-lg border border-[var(--line)] bg-[var(--bg-raised)] p-2">
-          <p className="label mb-1 text-cc-magenta">{r.ideas[0].format}</p>
-          <p className="line-clamp-2 text-[12px] italic text-[var(--text-dim)]">
-            {r.ideas[0].hooks[0]}
-          </p>
-        </div>
-      )}
-      {r && (
-        <button
-          onClick={() => data.onOpenOutput?.(r)}
-          className="btn-chrome mt-2.5 w-full !py-2 !text-[11px]"
+      <Handle type="target" position={Position.Left} />
+      <Handle type="source" position={Position.Right} />
+
+      {/* Inner card */}
+      <div
+        className="relative overflow-hidden rounded-2xl"
+        style={{
+          background:
+            "linear-gradient(180deg, var(--bg-elevated), var(--bg-raised))",
+        }}
+      >
+        {/* Top chrome ribbon */}
+        <div
+          className="px-3 py-2"
+          style={{
+            background:
+              "linear-gradient(100deg, rgba(43,43,255,0.18), rgba(138,43,226,0.22), rgba(255,79,216,0.28), rgba(255,192,77,0.18))",
+            backgroundSize: "200% 100%",
+            animation: "sheen 6s linear infinite",
+          }}
         >
-          View · Export
-        </button>
-      )}
-    </NodeShell>
+          <div className="flex items-center gap-2">
+            <span
+              className="grid h-6 w-6 place-items-center rounded-md text-[12px]"
+              style={{
+                background: "linear-gradient(135deg, #FF4FD8, #FFC04D)",
+                color: "#0a0a0a",
+                boxShadow: "0 0 14px -2px rgba(255,79,216,0.7)",
+              }}
+            >
+              ✦
+            </span>
+            <span
+              className="display text-[14px] tracking-widest text-chrome"
+              style={{ letterSpacing: "0.22em" }}
+            >
+              CONCEPTS
+            </span>
+            <span className="ml-auto label text-[var(--text-muted)]">
+              {r?.ideas.length ?? 0} ideas
+            </span>
+            {data.onDelete && (
+              <button
+                onClick={data.onDelete}
+                className="ml-1 rounded-md px-1 text-[var(--text-muted)] opacity-0 transition-opacity hover:text-[var(--text)] group-hover:opacity-100"
+                title="Delete this concept set"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="px-3 pb-3 pt-2.5">
+          <p className="mb-2 line-clamp-2 text-[13px] font-semibold leading-snug text-[var(--text)]">
+            {r?.goal ?? node.title}
+          </p>
+          {r?.ideas[0] && (
+            <div
+              className="rounded-lg border bg-[var(--bg)]/60 p-2.5"
+              style={{ borderColor: "rgba(255,79,216,0.3)" }}
+            >
+              <p className="label mb-1 text-cc-magenta">
+                {r.ideas[0].format}
+              </p>
+              <p className="line-clamp-2 text-[12px] italic text-[var(--text)]">
+                {r.ideas[0].hooks[0]}
+              </p>
+            </div>
+          )}
+          {r && (
+            <button
+              onClick={() => data.onOpenOutput?.(r)}
+              className="btn-chrome mt-3 w-full !py-2.5 !text-[12px]"
+            >
+              ✦ Open the holy grail
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
   );
 });
 OutputNode.displayName = "OutputNode";
@@ -248,40 +301,51 @@ const GroupNode = memo(({ data, selected }: NodeProps<NodeData>) => {
             : undefined,
         }}
       >
-        {/* Solid header zone — children dropped above the divider are kept out of this area */}
+        {/* Header zone — transparent so the dashed border owns the look;
+            children dropped here are clamped out of this area. */}
         <div
-          className="nodrag absolute inset-x-0 top-0 z-10 rounded-t-[1.4rem] border-b border-cc-violet/25 bg-[var(--bg)]/85 backdrop-blur"
+          className="nodrag absolute inset-x-0 top-0 z-10"
           style={{ height: GROUP_HEADER_HEIGHT }}
         >
-          <div className="flex items-center gap-2 border-b border-[var(--line)] px-3 py-2">
+          <div className="flex items-center gap-2 px-3 py-2">
             <span
-              className="grid h-5 w-5 place-items-center rounded-md text-[11px]"
-              style={{ background: "rgba(75,46,201,0.25)", color: "#8A2BE2" }}
+              className="grid h-6 w-6 place-items-center rounded-md text-[12px]"
+              style={{
+                background: "linear-gradient(135deg, #8A2BE2, #FF4FD8)",
+                color: "#fff",
+                boxShadow: "0 4px 14px -4px rgba(255,79,216,0.6)",
+              }}
             >
               ▦
             </span>
             <span
-              className="label text-cc-violet"
-              style={{ letterSpacing: "0.16em" }}
+              className="label font-semibold"
+              style={{
+                color: "#FF7AA2",
+                letterSpacing: "0.18em",
+                textShadow: "0 1px 8px rgba(0,0,0,0.6)",
+              }}
             >
               GROUP
             </span>
             <input
               value={node.title}
-              placeholder="Group name (e.g. Past examples)"
+              placeholder="Name this group (e.g. Past examples)"
               onChange={(e) => data.onChange?.({ title: e.target.value })}
-              className="min-w-0 flex-1 bg-transparent text-[13px] font-semibold text-[var(--text)] outline-none placeholder:text-[var(--text-muted)]"
+              className="min-w-0 flex-1 bg-transparent text-[14px] font-bold text-[var(--text)] outline-none placeholder:font-normal placeholder:text-[var(--text-muted)]"
+              style={{ textShadow: "0 1px 8px rgba(0,0,0,0.65)" }}
             />
             <button
               onClick={data.onFeedGroup}
               title={
                 allFed ? "Unfeed all sources in this group" : "Feed all sources in this group"
               }
-              className="rounded-md border px-1.5 py-0.5 text-[10px] transition-colors"
+              className="rounded-md border px-2 py-0.5 text-[10px] font-bold transition-colors"
               style={{
-                borderColor: allFed ? "#FF4FD8" : "var(--line-strong)",
-                color: allFed ? "#0a0a0a" : "var(--text-muted)",
-                background: allFed ? "#FF4FD8" : "transparent",
+                borderColor: allFed ? "#FF4FD8" : "rgba(255,79,216,0.45)",
+                color: allFed ? "#0a0a0a" : "#FF7AA2",
+                background: allFed ? "#FF4FD8" : "rgba(0,0,0,0.55)",
+                backdropFilter: "blur(4px)",
               }}
               disabled={count.total === 0}
             >
@@ -291,19 +355,22 @@ const GroupNode = memo(({ data, selected }: NodeProps<NodeData>) => {
               <button
                 onClick={data.onDelete}
                 title="Delete group (children move out)"
-                className="rounded-md px-1 text-[var(--text-muted)] opacity-0 transition-opacity hover:text-[var(--text)] group-hover:opacity-100"
+                className="rounded-md px-1 text-[var(--text-muted)] opacity-0 transition-opacity hover:text-cc-coral group-hover:opacity-100"
               >
                 ✕
               </button>
             )}
           </div>
-          <div className="px-3 pt-1.5">
+          <div className="px-3">
             <textarea
               value={node.groupInstruction ?? ""}
               placeholder="Tell the lab how to use everything in this group (optional). E.g. 'Use as reference for structure, not voice.'"
               onChange={(e) => data.onChange?.({ groupInstruction: e.target.value })}
               rows={1}
-              className="w-full resize-none rounded-lg border border-cc-violet/30 bg-cc-violet/10 px-2 py-1 text-[11px] leading-relaxed text-[var(--text-dim)] outline-none placeholder:text-[var(--text-muted)] focus:border-cc-violet"
+              className="w-full resize-none rounded-lg border bg-black/55 px-2.5 py-1.5 text-[11.5px] leading-relaxed text-[var(--text)] outline-none backdrop-blur placeholder:text-[var(--text-muted)] focus:bg-black/70"
+              style={{
+                borderColor: "rgba(255,79,216,0.35)",
+              }}
             />
           </div>
         </div>
